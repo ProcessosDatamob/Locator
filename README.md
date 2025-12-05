@@ -14,6 +14,5 @@
 
 ## Examples
 
-- [Kotlin](LocatorSdkModels.kt) - Android models
 - [Swift](LocatorSdkModels.swift) - iOS models
 - [TypeScript](LocatorSdkModels.ts) - TypeScript/React Native models
