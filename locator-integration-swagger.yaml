@@ -1,0 +1,906 @@
+swagger: "2.0"
+
+info:
+  version: "1.0.0"
+  title: API de Integração – SDK Locator
+  description: >
+    API utilizada exclusivamente pelo SDK Locator para obtenção de certificados cliente (P12),
+    tokens JWT temporários, escopos, configurações, features, grupos e geofences.
+    Todas as chamadas são realizadas de forma automatizada pelo SDK, usando mTLS e JWT,
+    e não devem ser consumidas diretamente por aplicativos de terceiros.
+  contact:
+    name: "Head of Engineering"
+    email: "alef.delpino@datamob.net.br"
+
+host: api.vivo-locator.com
+basePath: /
+schemes:
+  - https
+produces:
+  - application/json
+consumes:
+  - application/json
+
+tags:
+  - name: Certificado
+    description: Operações relacionadas à emissão de certificado cliente (P12) para mTLS.
+  - name: Tokens
+    description: Emissão de tokens JWT temporários utilizados pelo SDK Locator.
+  - name: Configurações
+    description: Sincronização da configuração principal do SDK Locator.
+  - name: Permissões e Grupos
+    description: Sincronização de escopos e grupos associados à licença do dispositivo/usuário.
+  - name: Geofences
+    description: Sincronização de cercas geográficas monitoradas pelo SDK Locator.
+
+securityDefinitions:
+  JwtInitial:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: |
+      JWT inicial fornecido pelo app ao ativar o SDK.
+      Exemplo: "Bearer <jwt_inicial>"
+
+  JwtSdk:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: |
+      JWT emitido via /token, usado em todos os endpoints protegidos.
+
+  mTLS:
+    type: apiKey
+    name: ssl-client-cert
+    in: header
+    description: |
+      Conexão deve ser estabelecida utilizando certificado cliente P12.
+      Este item representa apenas o requisito de mTLS, pois o Swagger 2.0
+      não possui um tipo nativo específico para certificados.
+
+paths:
+  /cert:
+    post:
+      tags: [Certificado]
+      summary: Solicita certificado P12 para mTLS
+      description: >
+        Gera um certificado cliente (P12) específico para a licença informada e retorna
+        o certificado em Base64, juntamente com o nonce gerado no servidor e a data de expiração.
+        O SDK utiliza o nonce enviado na requisição (nonce_app) e o nonce retornado na resposta
+        (nonce_server) para derivar, localmente, a senha do arquivo P12.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          description: Payload contendo identificadores do SDK e o nonce gerado no cliente.
+          schema:
+            $ref: "#/definitions/LocatorRequestApiCert"
+      responses:
+        200:
+          description: Certificado gerado com sucesso.
+          schema:
+            $ref: "#/definitions/LocatorResponseApiCert"
+          examples:
+            application/json:
+              id: "resp_9f2c1c7a4e5b42caa1e1dbe8fab12345"
+              requestId: "req_7b31e0c4f8c9431db99a8c87e990abcd"
+              timestamp: 1710091113123
+              data:
+                p12Base64: "MIIK...BASE64_DO_CERTIFICADO...AB"
+                nonce: "48d1e93c85e442ba8f86fb91c96fd28b"
+                expiresAt: 1712693113123
+      security:
+        - JwtInitial: []
+
+  /token:
+    post:
+      tags: [Tokens]
+      summary: Gera token JWT temporário
+      description: >
+        Gera um token JWT temporário de acordo com o tipo solicitado (jwt_api, jwt_mqtt, jwt_wss).
+        O token retornado será utilizado pelo SDK para autenticar chamadas de API, conexões MQTT
+        ou conexões WebSocket seguras, conforme o tipo configurado.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          description: Payload contendo os dados da licença e o tipo de token desejado.
+          schema:
+            $ref: "#/definitions/LocatorRequestApiToken"
+      responses:
+        200:
+          description: Token gerado com sucesso.
+          schema:
+            $ref: "#/definitions/LocatorResponseApiToken"
+      security:
+        - mTLS: []
+
+  /scopes:
+    post:
+      tags: [Permissões e Grupos]
+      summary: Sincroniza escopos permitidos
+      description: >
+        Retorna a lista de escopos (permissions/roles) associados à licença e ao contexto
+        da requisição. Esses escopos são utilizados pelo SDK para habilitar ou restringir
+        determinadas features de acordo com as regras de RBAC definidas no backend.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          description: Payload padrão de requisição do SDK, incluindo licença, sessão e metadados.
+          schema:
+            $ref: "#/definitions/LocatorRequestApiScopes"
+      responses:
+        200:
+          description: Lista de escopos autorizados para a licença.
+          schema:
+            $ref: "#/definitions/LocatorResponseApiScopes"
+      security:
+        - mTLS: []
+        - JwtSdk: []
+
+  /features:
+    post:
+      tags: [Permissões e Grupos]
+      summary: Retorna features habilitadas
+      description: >
+        Retorna a lista de features habilitadas para a licença informada, incluindo, quando aplicável,
+        os escopos obrigatórios para uso de cada feature. O SDK utiliza esse retorno para
+        habilitar/desabilitar funcionalidades internamente.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          description: Payload padrão de requisição do SDK, incluindo licença, sessão e metadados.
+          schema:
+            $ref: "#/definitions/LocatorRequestApiFeatures"
+      responses:
+        200:
+          description: Lista de features habilitadas para o SDK.
+          schema:
+            $ref: "#/definitions/LocatorResponseApiFeatures"
+      security:
+        - mTLS: []
+        - JwtSdk: []
+
+  /config:
+    post:
+      tags: [Configurações]
+      summary: Retorna configuração completa do SDK
+      description: >
+        Retorna o objeto de configuração completo do SDK Locator, incluindo parâmetros de coleta
+        de localização, política de bateria, configuração de MQTT, endpoints de API e parâmetros
+        de processamento em background. O SDK utiliza campos de controle de revisão para decidir
+        se precisa atualizar a configuração local.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          description: Payload padrão de requisição do SDK, incluindo licença, sessão e metadados.
+          schema:
+            $ref: "#/definitions/LocatorRequestApiConfig"
+      responses:
+        200:
+          description: Configuração atual a ser aplicada pelo SDK.
+          schema:
+            $ref: "#/definitions/LocatorResponseApiConfig"
+      security:
+        - mTLS: []
+        - JwtSdk: []
+
+  /groups:
+    post:
+      tags: [Permissões e Grupos]
+      summary: Retorna grupos disponíveis
+      description: >
+        Retorna os grupos associados à licença do dispositivo/usuário, diferenciando grupos
+        administrativos (admin) e grupos gerais (all). Esses grupos são usados pelo SDK
+        para filtrar geofences, visibilidade e outras regras de negócio.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          description: Payload padrão de requisição do SDK, incluindo licença, sessão e metadados.
+          schema:
+            $ref: "#/definitions/LocatorRequestApiGroups"
+      responses:
+        200:
+          description: Grupos associados ao contexto da licença.
+          schema:
+            $ref: "#/definitions/LocatorResponseApiGroups"
+      security:
+        - mTLS: []
+        - JwtSdk: []
+
+  /geofences:
+    post:
+      tags: [Geofences]
+      summary: Retorna lista de geofences
+      description: >
+        Retorna a lista de cercas geográficas (geofences) que devem ser monitoradas pelo SDK,
+        juntamente com o número de revisão atual. O SDK utiliza a revisão para decidir se
+        precisa sobrescrever as cercas locais ou manter a configuração atual.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          description: Payload padrão de requisição do SDK, incluindo licença, sessão e metadados.
+          schema:
+            $ref: "#/definitions/LocatorRequestApiGeofenses"
+      responses:
+        200:
+          description: Lista de geofences a serem monitoradas pelo SDK.
+          schema:
+            $ref: "#/definitions/LocatorResponseApiGeofenses"
+      security:
+        - mTLS: []
+        - JwtSdk: []
+
+# =====================================================================
+# DEFINITIONS (MODELOS)
+# =====================================================================
+
+definitions:
+  # -------------------------------------------------------------------
+  # Bases genéricas de Request/Response
+  # -------------------------------------------------------------------
+
+  LocatorRequestApiBase:
+    type: object
+    description: >
+      Estrutura base de requisição utilizada por todas as chamadas do SDK Locator
+      para a API de integração. Contém dados mínimos de rastreabilidade, como
+      identificador da requisição, licença, sessão, versão do SDK, plataforma e
+      timestamp da criação do pedido.
+    properties:
+      id:
+        type: string
+        description: >
+          Identificador único da requisição gerado pelo SDK.
+          Utilizado para rastreabilidade ponta a ponta entre cliente e servidor.
+      license:
+        type: string
+        description: >
+          Identificador lógico da licença associada ao dispositivo/usuário
+          (por exemplo, ID de contrato, MSISDN ou outro identificador único).
+      sessionId:
+        type: string
+        description: >
+          Identificador da sessão atual do SDK. Uma nova sessão pode ser criada
+          quando o aplicativo é reiniciado ou quando o SDK redefine o contexto.
+      sdkVersion:
+        type: string
+        description: >
+          Versão do SDK Locator em execução no dispositivo (exemplo: "2.0.1").
+          Utilizado para controle de compatibilidade e diagnóstico.
+      osPlatform:
+        type: string
+        description: >
+          Plataforma do sistema operacional onde o SDK está rodando.
+          Exemplos comuns: "android" ou "ios".
+      timestamp:
+        type: number
+        format: int64
+        description: >
+          Timestamp em milissegundos (epoch ms) correspondente ao momento exato
+          em que a requisição foi gerada no dispositivo.
+      data:
+        type: object
+        description: >
+          Campo genérico utilizado para transportar a carga específica
+          de cada tipo de operação (por exemplo, nonce, tipo de token etc.).
+    required:
+      - id
+      - license
+      - timestamp
+    example:
+      id: "req_7b31e0c4f8c9431db99a8c87e990abcd"
+      license: "LIC-1234567890"
+      sessionId: "SESSION-55667788"
+      sdkVersion: "2.0.1"
+      osPlatform: "android"
+      timestamp: 1710087513123
+
+  LocatorResponseApiBase:
+    type: object
+    description: >
+      Estrutura base de resposta utilizada por todas as respostas da API de integração.
+      Inclui o identificador da resposta, o ID da requisição de origem e o timestamp
+      da geração da resposta no backend.
+    properties:
+      id:
+        type: string
+        description: >
+          Identificador único da resposta gerado pelo backend.
+          Utilizado para rastreabilidade e auditoria de respostas.
+      requestId:
+        type: string
+        description: >
+          Identificador da requisição original enviada pelo SDK, permitindo
+          o pareamento exato entre requisição e resposta.
+      timestamp:
+        type: number
+        format: int64
+        description: >
+          Timestamp em milissegundos (epoch ms) correspondente ao momento
+          em que a resposta foi gerada no backend.
+    required:
+      - id
+      - requestId
+      - timestamp
+    example:
+      id: "resp_9f2c1c7a4e5b42caa1e1dbe8fab12345"
+      requestId: "req_7b31e0c4f8c9431db99a8c87e990abcd"
+      timestamp: 1710091113123
+
+  # -------------------------------------------------------------------
+  # Certificado (P12)
+  # -------------------------------------------------------------------
+
+  LocatorRequestApiCert:
+    allOf:
+      - $ref: "#/definitions/LocatorRequestApiBase"
+      - type: object
+        description: >
+          Requisição específica para emissão de certificado cliente (P12) utilizado em mTLS.
+          Inclui, dentro do campo data, o nonce gerado exclusivamente pelo SDK no dispositivo.
+        properties:
+          data:
+            type: object
+            description: >
+              Estrutura de dados específica para a emissão do certificado,
+              contendo o nonce gerado no cliente (nonce_app).
+            properties:
+              nonce:
+                type: string
+                description: >
+                  Valor aleatório (nonce_app) gerado pelo SDK no dispositivo.
+                  Esse nonce será combinado com um nonce gerado no servidor (nonce_server)
+                  para derivar, exclusivamente no cliente, a senha do certificado P12.
+            required:
+              - nonce
+    example:
+      id: "req_7b31e0c4f8c9431db99a8c87e990abcd"
+      license: "LIC-1234567890"
+      sessionId: "SESSION-55667788"
+      sdkVersion: "2.0.1"
+      osPlatform: "android"
+      timestamp: 1710087513123
+      data:
+        nonce: "c3a19e28fdb745cd88b31e109f01d2a7"
+
+  LocatorResponseApiCert:
+    allOf:
+      - $ref: "#/definitions/LocatorResponseApiBase"
+      - type: object
+        description: >
+          Resposta da emissão de certificado cliente (P12). Retorna o certificado codificado
+          em Base64, o nonce gerado no servidor e a data de expiração do certificado.
+        properties:
+          data:
+            type: object
+            description: >
+              Estrutura que contém o certificado P12 e metadados associados à sua utilização.
+            properties:
+              p12Base64:
+                type: string
+                description: >
+                  Conteúdo do certificado cliente em formato PKCS#12, codificado em Base64.
+                  O SDK irá decodificar esse valor localmente e importar o certificado utilizando
+                  a senha derivada a partir dos nonces e metadados da requisição.
+              nonce:
+                type: string
+                description: >
+                  Nonce gerado pelo servidor (nonce_server). Combinado com o nonce enviado
+                  pelo SDK (nonce_app) e outros campos de contexto para derivar a senha do P12.
+              expiresAt:
+                type: number
+                format: int64
+                description: >
+                  Timestamp em milissegundos (epoch ms) indicando a data/hora de expiração
+                  do certificado emitido. Após essa data, um novo certificado deverá ser solicitado.
+            required:
+              - p12Base64
+              - nonce
+              - expiresAt
+    example:
+      id: "resp_9f2c1c7a4e5b42caa1e1dbe8fab12345"
+      requestId: "req_7b31e0c4f8c9431db99a8c87e990abcd"
+      timestamp: 1710091113123
+      data:
+        p12Base64: "MIIK...BASE64_DO_CERTIFICADO...AB"
+        nonce: "48d1e93c85e442ba8f86fb91c96fd28b"
+        expiresAt: 1712693113123
+
+  # -------------------------------------------------------------------
+  # Token JWT
+  # -------------------------------------------------------------------
+
+  LocatorRequestApiToken:
+    allOf:
+      - $ref: "#/definitions/LocatorRequestApiBase"
+      - type: object
+        description: >
+          Requisição para geração de token JWT temporário. Permite que o SDK solicite
+          tokens para uso em chamadas de API (jwt_api), conexões MQTT (jwt_mqtt) ou
+          conexões WebSocket seguras (jwt_wss).
+        properties:
+          data:
+            type: object
+            description: >
+              Estrutura que define o tipo de token desejado e, opcionalmente,
+              escopos adicionais a serem incluídos no token JWT.
+            properties:
+              type:
+                type: string
+                description: >
+                  Tipo de token JWT solicitado pelo SDK.
+                  - jwt_api  → uso em chamadas HTTP da API.
+                  - jwt_mqtt → uso em conexão/autorização MQTT.
+                  - jwt_wss  → uso em conexões WebSocket seguras.
+                enum:
+                  - "jwt_api"
+                  - "jwt_mqtt"
+                  - "jwt_wss"
+              scopes:
+                type: array
+                description: >
+                  Lista opcional de escopos a serem embutidos no token JWT,
+                  utilizada para RBAC no backend.
+                items:
+                  type: string
+            required:
+              - type
+    example:
+      id: "req_token_01"
+      license: "LIC-1234567890"
+      sessionId: "SESSION-55667788"
+      sdkVersion: "2.0.1"
+      osPlatform: "android"
+      timestamp: 1710087513123
+      data:
+        type: "jwt_api"
+        scopes:
+          - "locator.read"
+          - "locator.write"
+
+  LocatorResponseApiToken:
+    allOf:
+      - $ref: "#/definitions/LocatorResponseApiBase"
+      - type: object
+        description: >
+          Resposta da geração de token JWT temporário. Retorna o token,
+          o tipo solicitado e a data de expiração.
+        properties:
+          data:
+            type: object
+            description: >
+              Estrutura contendo o token JWT gerado e metadados associados.
+            properties:
+              type:
+                type: string
+                description: >
+                  Tipo de token gerado, refletindo o valor solicitado na requisição
+                  (jwt_api, jwt_mqtt ou jwt_wss).
+              token:
+                type: string
+                description: >
+                  Token JWT assinado, a ser utilizado pelo SDK conforme o tipo
+                  de integração (API, MQTT, WSS).
+              expiresAt:
+                type: number
+                format: int64
+                description: >
+                  Timestamp em milissegundos (epoch ms) indicando a data/hora
+                  de expiração do token JWT.
+            required:
+              - type
+              - token
+              - expiresAt
+    example:
+      id: "resp_token_01"
+      requestId: "req_token_01"
+      timestamp: 1710087515123
+      data:
+        type: "jwt_api"
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        expiresAt: 1710091115123
+
+  # -------------------------------------------------------------------
+  # Scopes
+  # -------------------------------------------------------------------
+
+  LocatorRequestApiScopes:
+    allOf:
+      - $ref: "#/definitions/LocatorRequestApiBase"
+      - type: object
+        description: >
+          Requisição para sincronização dos escopos autorizados para a licença e contexto atual.
+          Normalmente o campo data não é utilizado, mas permanece disponível para extensões futuras.
+    example:
+      id: "req_scopes_01"
+      license: "LIC-1234567890"
+      sessionId: "SESSION-55667788"
+      sdkVersion: "2.0.1"
+      osPlatform: "android"
+      timestamp: 1710087513123
+
+  LocatorResponseApiScopes:
+    allOf:
+      - $ref: "#/definitions/LocatorResponseApiBase"
+      - type: object
+        description: >
+          Resposta contendo a lista de escopos disponíveis para a licença no contexto
+          da requisição. Esses escopos são utilizados pelo SDK e backend para RBAC.
+        properties:
+          data:
+            type: array
+            description: >
+              Lista de escopos (permissions/roles) associados à licença.
+            items:
+              type: string
+    example:
+      id: "resp_scopes_01"
+      requestId: "req_scopes_01"
+      timestamp: 1710087516123
+      data:
+        - "locator.read"
+        - "locator.write"
+        - "locator.admin"
+
+  # -------------------------------------------------------------------
+  # Features
+  # -------------------------------------------------------------------
+
+  LocatorRequestApiFeatures:
+    allOf:
+      - $ref: "#/definitions/LocatorRequestApiBase"
+      - type: object
+        description: >
+          Requisição para obtenção das features habilitadas para a licença.
+          O SDK utiliza o retorno para decidir quais recursos podem ser utilizados.
+    example:
+      id: "req_features_01"
+      license: "LIC-1234567890"
+      sessionId: "SESSION-55667788"
+      sdkVersion: "2.0.1"
+      osPlatform: "android"
+      timestamp: 1710087513123
+
+  LocatorResponseApiFeatures:
+    allOf:
+      - $ref: "#/definitions/LocatorResponseApiBase"
+      - type: object
+        description: >
+          Resposta contendo o conjunto de features habilitadas para o SDK,
+          bem como os escopos obrigatórios associados a cada feature.
+        properties:
+          data:
+            $ref: "#/definitions/LocatorFeatures"
+    example:
+      id: "resp_features_01"
+      requestId: "req_features_01"
+      timestamp: 1710087517123
+      data:
+        features:
+          - feature: "location_realtime"
+            scopes:
+              - "locator.read"
+          - feature: "location_history"
+            scopes:
+              - "locator.read"
+              - "locator.history"
+
+  LocatorFeatures:
+    type: object
+    description: >
+      Estrutura que encapsula a lista de features habilitadas no SDK,
+      normalmente associadas a escopos específicos para controle de acesso.
+    properties:
+      features:
+        type: array
+        description: >
+          Lista de features habilitadas para a licença.
+        items:
+          $ref: "#/definitions/LocatorFeature"
+    example:
+      features:
+        - feature: "location_realtime"
+          scopes:
+            - "locator.read"
+        - feature: "location_history"
+          scopes:
+            - "locator.history"
+
+  LocatorFeature:
+    type: object
+    description: >
+      Representa uma feature individual habilitável no SDK Locator. Pode ter
+      escopos obrigatórios associados, que devem estar presentes na licença
+      para que a feature seja considerada ativa.
+    properties:
+      feature:
+        type: string
+        description: >
+          Identificador estável da feature (por exemplo, "location_realtime",
+          "location_history", "sos_mode").
+      scopes:
+        type: array
+        description: >
+          Lista de escopos obrigatórios para habilitar esta feature.
+          Se vazia ou ausente, a feature pode ser considerada pública dentro do contexto da licença.
+        items:
+          type: string
+    required:
+      - feature
+    example:
+      feature: "location_realtime"
+      scopes:
+        - "locator.read"
+
+  # -------------------------------------------------------------------
+  # Config
+  # -------------------------------------------------------------------
+
+  LocatorRequestApiConfig:
+    allOf:
+      - $ref: "#/definitions/LocatorRequestApiBase"
+      - type: object
+        description: >
+          Requisição para obtenção da configuração completa do SDK Locator.
+          Utilizada normalmente em processos de inicialização ou sincronização periódica.
+    example:
+      id: "req_config_01"
+      license: "LIC-1234567890"
+      sessionId: "SESSION-55667788"
+      sdkVersion: "2.0.1"
+      osPlatform: "android"
+      timestamp: 1710087513123
+
+  LocatorResponseApiConfig:
+    allOf:
+      - $ref: "#/definitions/LocatorResponseApiBase"
+      - type: object
+        description: >
+          Resposta contendo o objeto de configuração do SDK Locator. A estrutura
+          exata do campo data é compatível com o contrato LocatorConfig utilizado
+          pelo SDK (incluindo API, MQTT, coleta, bateria, etc.).
+        properties:
+          data:
+            type: object
+            description: >
+              Objeto de configuração completo do SDK Locator (equivalente a LocatorConfig).
+              Inclui parâmetros de API, MQTT, coleta, bateria, motion, process e campos de auditoria.
+    example:
+      id: "resp_config_01"
+      requestId: "req_config_01"
+      timestamp: 1710087518123
+      data:
+        license: "LIC-1234567890"
+        sdkVersion: "2.0.1"
+        osPlatform: "android"
+        api:
+          token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          certUrl: "https://api.vivo-locator.com/cert"
+          scopesUrl: "https://api.vivo-locator.com/scopes"
+          tokenUrl: "https://api.vivo-locator.com/token"
+          configUrl: "https://api.vivo-locator.com/config"
+          groupsUrl: "https://api.vivo-locator.com/groups"
+          featuresUrl: "https://api.vivo-locator.com/features"
+          geofencesUrl: "https://api.vivo-locator.com/geofences"
+        mqtt:
+          clientId: "sdk-android-abc123"
+          broker: "mqtts.vivo-locator.com"
+          port: "8883"
+          username: "svc-locator"
+        process:
+          offlineRetentionDays: 7
+        collect:
+          collectIntervalMillis: 180000
+          sendIntervalMillis: 600000
+
+  # -------------------------------------------------------------------
+  # Groups
+  # -------------------------------------------------------------------
+
+  LocatorRequestApiGroups:
+    allOf:
+      - $ref: "#/definitions/LocatorRequestApiBase"
+      - type: object
+        description: >
+          Requisição para sincronização dos grupos associados à licença.
+          Esses grupos são usados para controle de visibilidade e escopo de geofences.
+    example:
+      id: "req_groups_01"
+      license: "LIC-1234567890"
+      sessionId: "SESSION-55667788"
+      sdkVersion: "2.0.1"
+      osPlatform: "android"
+      timestamp: 1710087513123
+
+  LocatorResponseApiGroups:
+    allOf:
+      - $ref: "#/definitions/LocatorResponseApiBase"
+      - type: object
+        description: >
+          Resposta contendo os grupos associados ao dispositivo/usuário. Diferencia
+          grupos administrativos (admin) e a lista geral de grupos (all).
+        properties:
+          data:
+            type: object
+            description: >
+              Estrutura contendo as listas de grupos administrativos e gerais.
+            properties:
+              admin:
+                type: array
+                description: >
+                  Lista de grupos nos quais o usuário/dispositivo possui privilégios administrativos
+                  ou permissões elevadas.
+                items:
+                  type: string
+              all:
+                type: array
+                description: >
+                  Lista de todos os grupos aos quais o usuário/dispositivo pertence,
+                  incluindo os grupos administrativos.
+                items:
+                  type: string
+            required:
+              - admin
+              - all
+    example:
+      id: "resp_groups_01"
+      requestId: "req_groups_01"
+      timestamp: 1710087519123
+      data:
+        admin:
+          - "group-admin-01"
+        all:
+          - "group-admin-01"
+          - "group-standard-01"
+          - "group-standard-02"
+
+  # -------------------------------------------------------------------
+  # Geofences
+  # -------------------------------------------------------------------
+
+  LocatorRequestApiGeofenses:
+    allOf:
+      - $ref: "#/definitions/LocatorRequestApiBase"
+      - type: object
+        description: >
+          Requisição para sincronização das cercas geográficas monitoradas pelo SDK.
+          O SDK pode utilizar informações locais de revisão para otimizar as chamadas,
+          mas esta versão do contrato considera apenas a estrutura base.
+    example:
+      id: "req_geofences_01"
+      license: "LIC-1234567890"
+      sessionId: "SESSION-55667788"
+      sdkVersion: "2.0.1"
+      osPlatform: "android"
+      timestamp: 1710087513123
+
+  LocatorResponseApiGeofenses:
+    allOf:
+      - $ref: "#/definitions/LocatorResponseApiBase"
+      - type: object
+        description: >
+          Resposta contendo a lista de geofences e a revisão atual das cercas.
+          O SDK utiliza a revisão para decidir se deve sobrescrever ou manter a
+          configuração local de cercas.
+        properties:
+          data:
+            $ref: "#/definitions/LocatorGeofences"
+    example:
+      id: "resp_geofences_01"
+      requestId: "req_geofences_01"
+      timestamp: 1710087520123
+      data:
+        geofences:
+          - id: "GEOF-01"
+            groupId: "group-standard-01"
+            latitude: -23.5629
+            longitude: -46.6544
+            radiusMeters: 150
+          - id: "GEOF-02"
+            groupId: "group-standard-02"
+            latitude: -23.5671
+            longitude: -46.6512
+            radiusMeters: 300
+        revision: 5
+
+  LocatorGeofences:
+    type: object
+    description: >
+      Conjunto de cercas geográficas associado à licença, incluindo o número
+      de revisão atual. Alterações na lista de geofences normalmente implicam
+      incremento de revisão.
+    properties:
+      geofences:
+        type: array
+        description: >
+          Lista de geofences que o SDK deve monitorar.
+        items:
+          $ref: "#/definitions/LocatorGeofence"
+      revision:
+        type: number
+        description: >
+          Número de revisão atual da configuração de geofences. Utilizado pelo SDK
+          para decidir se uma nova sincronização precisa substituir os dados locais.
+    required:
+      - geofences
+    example:
+      geofences:
+        - id: "GEOF-01"
+          groupId: "group-standard-01"
+          latitude: -23.5629
+          longitude: -46.6544
+          radiusMeters: 150
+        - id: "GEOF-02"
+          groupId: "group-standard-02"
+          latitude: -23.5671
+          longitude: -46.6512
+          radiusMeters: 300
+      revision: 5
+
+  LocatorGeofence:
+    type: object
+    description: >
+      Representa uma cerca geográfica circular a ser monitorada pelo SDK Locator.
+      Cada geofence está associada a um grupo e possui posição e raio definidos.
+    properties:
+      id:
+        type: string
+        description: >
+          Identificador único da geofence, definido pelo backend. Utilizado para
+          rastreabilidade de eventos de entrada/saída.
+      groupId:
+        type: string
+        description: >
+          Identificador do grupo ao qual a geofence pertence. O SDK somente aplicará
+          a geofence se o grupo estiver presente na lista de grupos sincronizados.
+      latitude:
+        type: number
+        format: double
+        description: >
+          Latitude em graus decimais (WGS84) do centro da geofence.
+      longitude:
+        type: number
+        format: double
+        description: >
+          Longitude em graus decimais (WGS84) do centro da geofence.
+      radiusMeters:
+        type: number
+        format: double
+        description: >
+          Raio da geofence em metros. Define a distância a partir do ponto central
+          dentro da qual o SDK deverá considerar o dispositivo como "dentro" da cerca.
+      revision:
+        type: number
+        description: >
+          Campo opcional de controle de versão individual da geofence.
+      createdAt:
+        type: number
+        format: int64
+        description: >
+          Timestamp em milissegundos (epoch ms) da criação da geofence no backend.
+      updatedAt:
+        type: number
+        format: int64
+        description: >
+          Timestamp em milissegundos (epoch ms) da última atualização da geofence.
+    required:
+      - id
+      - groupId
+      - latitude
+      - longitude
+      - radiusMeters
+    example:
+      id: "GEOF-01"
+      groupId: "group-standard-01"
+      latitude: -23.5629
+      longitude: -46.6544
+      radiusMeters: 150
+      revision: 3
+      createdAt: 1710000000000
+      updatedAt: 1710080000000
