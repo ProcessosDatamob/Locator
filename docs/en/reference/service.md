@@ -1,6 +1,6 @@
-# 📘 **Serviço principal - SDK**
+# LocatorService
 
-[< Voltar](toc.md)
+[< Voltar](../README.md)
 
 `LocatorService` é a **interface principal** do SDK Locator exposta para o APP e para bridges de WebView.
 Tudo que o APP precisa fazer com o SDK passa, direta ou indiretamente, por aqui.
@@ -864,4 +864,4 @@ Nesta parte documentamos completamente:
 - Fluxos típicos de uso (ativação, modo SOS, pausa, logout)
 - Exemplos em TypeScript, Kotlin e Swift
 
-[< Voltar](toc.md)
+[< Voltar](../README.md)

@@ -1,6 +1,6 @@
-# 📘 **Tipos / Interfaces**
+# Tipos e Interfaces
 
-[< Voltar](toc.md)
+[< Voltar](../README.md)
 
 Esta seção descreve **todos os tipos estruturados**, seus **campos**, **regras**, **validações**, **quando são usados**, **quem consome**, e exemplos reais em **TypeScript, Kotlin e Swift**.
 
@@ -1347,4 +1347,4 @@ struct LocatorRequestApiGeofences: LocatorRequestApi {
 }
 ```
 
-[< Voltar](toc.md)
+[< Voltar](../README.md)

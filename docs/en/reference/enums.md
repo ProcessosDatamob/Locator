@@ -1,6 +1,6 @@
-# 📘 **ENUMS**
+# Enums
 
-[< Voltar](toc.md)
+[< Voltar](../README.md)
 
 > Esta documentação descreve todas as _enumerations_ públicas do Locator SDK.
 > Os enums são usados tanto pelo app host quanto pelo backend para interpretar corretamente o comportamento do SDK, eventos, comandos e telemetria.
@@ -1574,4 +1574,4 @@ func buildCollect() -> LocatorCollect {
 }
 ```
 
-[< Voltar](toc.md)
+[< Voltar](../README.md)

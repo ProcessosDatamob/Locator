@@ -1,6 +1,6 @@
-# 📘 **Autenticação SDK**
+# Autenticação SDK
 
-[< Voltar](toc.md)
+[< Voltar](../README.md)
 
 A segurança do Locator SDK combina **certificados cliente** (mTLS) e **tokens JWT** temporários.
 
@@ -39,4 +39,4 @@ Reconectar com backoff e jitter.
 Tópicos: seguem regra fixa do produto (exemplo ilustrativo):
 locator/{license}/telemetry (publish) • locator/{license}/commands (subscribe)
 
-[< Voltar](toc.md)
+[< Voltar](../README.md)

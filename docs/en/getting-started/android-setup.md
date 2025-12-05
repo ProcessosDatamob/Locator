@@ -1,15 +1,14 @@
-# Documentação - Android Como Usar - Português (Brasil)
+# Android Setup
 
-[< Voltar](../README.md)
+[< Back](../README.md)
 
-Bem-vindo à documentação oficial de **Como implementar a SDK Locator Android**.
+Welcome to the official documentation for **How to implement the Locator SDK for Android**.
 
-A SDK segue a definição descrita em **Serviço principal - SDK**.
+The SDK follows the definition described in [LocatorService](../reference/service.md).
 
-## Inicialização
-Para a inicialização da SDK, deve-se realizar a chamada do método `initialize` passando como paramêtro o `Contexto` da aplicação. 
-Este já devolvendo uma instância da SDK `LocatorSDK`.
+## Initialization
 
+To initialize the SDK, you must call the `initialize` method passing the application `Context` as a parameter. This returns an instance of the `LocatorSDK`.
 
 ```kotlin
 class Application : Application() {
@@ -21,8 +20,9 @@ class Application : Application() {
 }
 ```
 
-## Instância da SDK
-Para utilizar a SDK será necessário um `get` da instância da SDK, isto pode ser feito atrás:
+## SDK Instance
+
+To use the SDK, you will need to get an instance of the SDK, which can be done via:
 - `fun getInstance(): Result<LocatorSDK>`
 
 ```kotlin
@@ -34,11 +34,11 @@ class MainActivity : ComponentActivity() {
         LocatorSDK.getInstance()
             .onSuccess { 
                 sdk = it
-                // Em caso de sucesso, seguir com a configuração
+                // On success, proceed with configuration
             }
             .onFailure { exception ->
-                //TODO tratar erro e inicializar a SDK
-                //O paramêtro retornado dentro do contexto de falha é um obj do tipo LocatorSDKNotInitializedException
+                //TODO handle error and initialize SDK
+                //The parameter returned in the failure context is an object of type LocatorSDKNotInitializedException
             }
         //...
     }
@@ -48,13 +48,14 @@ class LocatorSDKNotInitializedException :
     IllegalStateException("LocatorSDK not initialized. Call initialize() first.")
 ```
 
-## Configuração
-Após a aquisição da instância é necessário configurar o Integrador e LocatorConfig que será o configurador da SDK.
-Por definição a SDk contará com um Integrador default (`DefaultLocatorSDKIntegrationApiImpl`), 
-que ao não ser configurado um novo tomará este como padrão de uso.
+## Configuration
 
-### Integrador (LocatorIntegration)
-O Integrador faz uso da interface `LocatorIntegration`:
+After obtaining the instance, you need to configure the Integrator and LocatorConfig, which will be the SDK's configurator.
+By default, the SDK will have a default Integrator (`DefaultLocatorSDKIntegrationApiImpl`), which will be used as default if no new one is configured.
+
+### Integrator (LocatorIntegration)
+
+The Integrator uses the `LocatorIntegration` interface:
 
 ```kotlin
 interface LocatorIntegration {
@@ -67,8 +68,9 @@ interface LocatorIntegration {
     suspend fun getGeofences(payload: LocatorRequestApiGeofenses): LocatorResponseApiGeofenses
 }
 ```
-Caso da necessidade de uma nova implementação, apenas implementar está interface. 
-Para configuração do Integrador utilizar o método `fun registerIntegration(integration: LocatorIntegration)`.
+
+If you need a new implementation, just implement this interface.
+To configure the Integrator, use the method `fun registerIntegration(integration: LocatorIntegration)`.
 
 ```kotlin
 fun configureSDK() {
@@ -82,7 +84,8 @@ fun configureSDK() {
 ```
 
 ### LocatorConfig
-Classe utilizada para configurar a SDK
+
+Class used to configure the SDK
 
 ```kotlin
 data class LocatorConfig(
@@ -106,7 +109,7 @@ fun configureSDK() {
     LocatorSDK.getInstance()
         .onSuccess { 
             //...
-            //TODO configure todos os paramêntros necessários do LocatorConfig
+            //TODO configure all necessary parameters of LocatorConfig
             sdk.setConfig(config = LocatorConfig())
             //...
         }
@@ -114,8 +117,9 @@ fun configureSDK() {
 }
 ```
 
-### Inicialização do Funcionamento da SDK
-Caso tudo esteja configurado, pode-se chamar o método de `start` da sdk. Com isso a SDK começará a coleta das localizações. 
+### SDK Operation Initialization
+
+If everything is configured, you can call the SDK's `start` method. With this, the SDK will begin collecting locations.
 
 ```kotlin
 fun configureSDK() {
@@ -142,11 +146,11 @@ class LocatorSDKMissingPermissionsException :
 
 ```
 
-## Comandos
-Para validar se um comando deve ser executado pela SDK Locator, faça uso do método `isLocatorSDKCommand`.
-Caso seja de propriedade da SDK, utilize `convertLocatorSDKCommand` para converter a mensagem e `execute` para que a SDK rode o comando.
-Ambos os métodos são pertencentes a classe LocatorSDK como métodos do `companion object`, sendo assim não há necessidade de uma instância
-para realizar a chamada dos métodos. 
+## Commands
+
+To validate if a command should be executed by the Locator SDK, use the `isLocatorSDKCommand` method.
+If it belongs to the SDK, use `convertLocatorSDKCommand` to convert the message and `execute` for the SDK to run the command.
+Both methods belong to the LocatorSDK class as `companion object` methods, so there is no need for an instance to call these methods.
 
 ```kotlin
 class FirebaseService : FirebaseMessagingService() {
@@ -158,8 +162,8 @@ class FirebaseService : FirebaseMessagingService() {
             LocatorSDK.convertLocatorSDKCommand(notificationMsg = "")
                 .onSuccess { sdk.execute(command = it) }
                 .onFailure { exception -> 
-                    // exception é do tipo LocatorSDKCommandConverterException
-                    // indicando que não foi possível realizar o parse da msg para um comando válido
+                    // exception is of type LocatorSDKCommandConverterException
+                    // indicating that it was not possible to parse the message into a valid command
                 }
         }
         //...
@@ -170,4 +174,5 @@ class LocatorSDKCommandConverterException :
     ClassCastException("Error on cast message to LocatorCommand.")
 ```
 
-[< Voltar](../README.md)
+[< Back](../README.md)
+

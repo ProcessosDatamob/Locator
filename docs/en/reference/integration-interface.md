@@ -1,6 +1,6 @@
-# 📘 **Integrações de API**
+# Interface de Integração
 
-[< Voltar](toc.md)
+[< Voltar](../README.md)
 
 _A Interface de Comunicação com APIs Externas – Usada Somente pelo SDK_
 
@@ -498,4 +498,4 @@ class LocatorIntegrationImpl: LocatorIntegration {
 }
 ```
 
-[< Voltar](toc.md)
+[< Voltar](../README.md)

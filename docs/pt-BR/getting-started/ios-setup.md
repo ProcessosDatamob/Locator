@@ -1,10 +1,11 @@
 
-# Documentação - iOS Como Usar - Swift
+# Configuração iOS
 
 [< Voltar](../README.md)
 
 Bem-vindo à documentação oficial de **Como implementar a SDK Locator iOS**.
-A SDK segue a definição descrita em **Serviço principal - SDK**.
+
+A SDK segue a definição descrita em [LocatorService](../reference/service.md).
 
 ---
 
