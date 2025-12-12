@@ -1,15 +1,18 @@
-# 📘 **DOC - Vivo Locator**
+# 📘 DOC - Vivo Locator
 
-## **SDK**
+## SDK Documentation
 
-- [Português (Brasil)](docs/pt-BR/toc.md)
+### Português (Brasil)
+- [Documentação Completa](docs/pt-BR/README.md)
 
-## **API**
+### English
+- [Complete Documentation](docs/en/README.md)
 
-- [Swagger](api/swagger/locator-integration-swagger.yaml)
+## API
 
-## **Exemplos**
+- [Swagger](docs/api/swagger/locator-integration-swagger.yaml)
 
-- [Kotlin](examples/android-how-to-use.md)
-- [Swift](examples/LocatorSdkModels.swift)
-- [Typescript](examples/LocatorSdkModels.ts)
+## Examples
+
+- [Swift](LocatorSdkModels.swift) - iOS models
+- [TypeScript](LocatorSdkModels.ts) - TypeScript/React Native models

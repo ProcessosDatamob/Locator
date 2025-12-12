@@ -1,6 +1,6 @@
-# **Processo Oficial de Geração da Senha do Certificado P12**
+# Download de Certificado
 
-_(Versão final para envio por e-mail ao time externo)_
+[< Voltar](../README.md)
 
 Este documento descreve, de forma clara e objetiva, como o processo de criação da senha do certificado cliente (P12) funciona no SDK de localização.
 

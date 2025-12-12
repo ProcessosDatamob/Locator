@@ -1,6 +1,6 @@
-# 📘 **Arquitetura SDK**
+# Arquitetura SDK
 
-[< Voltar](toc.md)
+[< Voltar](../README.md)
 
 A arquitetura do Locator SDK é composta por cinco camadas principais:
 
@@ -62,4 +62,4 @@ O **modo** ajusta intervalos de coleta e envio; o **estado** descreve o estágio
 - Eventos (`LocatorEvent`): telemetria de sistema, erros, mudanças de estado.
 - Comandos (`LocatorCommand`): instruções do backend/app para o SDK (ex.: `SET_SDK_MODE`, `SYNC_CONFIG`).
 
-[< Voltar](toc.md)
+[< Voltar](../README.md)
