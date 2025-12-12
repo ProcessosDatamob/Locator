@@ -27,6 +27,8 @@ class MyApplication : Application() {
 
 Alternativamente, você pode inicializar a SDK passando a configuração diretamente no método `initialize`:
 
+> **⚠️ IMPORTANTE:** Antes de chamar `start()`, é necessário setar o estado do SDK usando `setState(LocatorState.IDLE)`. Veja a seção 3 para o exemplo completo.
+
 ```kotlin
 class MyApplication : Application() {
 
@@ -107,6 +109,8 @@ class MyApplication : Application() {
 ### 3. Fluxo Completo: Obter Instância, Configurar e Iniciar
 
 Exemplo completo mostrando todo o fluxo de configuração:
+
+> **⚠️ IMPORTANTE:** Antes de inicializar o SDK, é necessário setar o estado do SDK. Para habilitar o funcionamento da SDK para usuários com a funcionalidade, chame o método `setState` com valor `LocatorState.IDLE` antes da chamada de `start()`.
 
 ```kotlin
 class MainActivity : ComponentActivity() {
@@ -299,6 +303,10 @@ class MainActivity : ComponentActivity() {
     
     private fun startSDK() {
         try {
+            // IMPORTANTE: Antes de inicializar o SDK, é necessário setar o estado do SDK
+            // Para habilitar o funcionamento da SDK para usuários com a funcionalidade
+            // Chamar o método setState com valor LocatorState.IDLE antes da chamada de start()
+            sdk.setState(LocatorState.IDLE)
             sdk.start()
             Log.d("LocatorSDK", "SDK iniciada com sucesso!")
         } catch (e: LocatorSDKMissingPermissionsException) {
@@ -323,6 +331,8 @@ class MainActivity : ComponentActivity() {
 ### 4. Exemplo com ViewModel (Arquitetura Recomendada)
 
 Para uma arquitetura mais limpa, você pode usar ViewModel:
+
+> **⚠️ IMPORTANTE:** Lembre-se de chamar `setState(LocatorState.IDLE)` antes de `start()` no método `startSDK()`.
 
 ```kotlin
 class LocatorViewModel : ViewModel() {
@@ -403,6 +413,10 @@ class LocatorViewModel : ViewModel() {
     
     fun startSDK() {
         try {
+            // IMPORTANTE: Antes de inicializar o SDK, é necessário setar o estado do SDK
+            // Para habilitar o funcionamento da SDK para usuários com a funcionalidade
+            // Chamar o método setState com valor LocatorState.IDLE antes da chamada de start()
+            sdk?.setState(LocatorState.IDLE)
             sdk?.start()
             _sdkStatus.postValue("SDK iniciada com sucesso")
         } catch (e: Exception) {
