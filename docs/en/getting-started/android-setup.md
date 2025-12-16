@@ -6,6 +6,142 @@ Welcome to the official documentation for **How to implement the Locator SDK for
 
 The SDK follows the definition described in [LocatorService](../reference/service.md).
 
+## Project configuration (Gradle)
+
+Before using the SDK, you must configure the Android project with the required plugins and dependencies.
+
+### Versions and plugins (`libs.versions.toml`)
+
+In your version catalog (`libs.versions.toml`), add (or adjust) the following entries:
+
+```toml
+[plugins]
+android-library = { id = "com.android.library", version.ref = "agp" }
+jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "kspVersion" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleSvc" }
+
+[versions]
+agp = "8.13.1"
+kotlin = "2.2.21"
+kspVersion = "2.3.1"
+googleSvc = "4.4.4"
+```
+
+### Plugins in the project `build.gradle`
+
+In the root `build.gradle.kts` file, register the plugins:
+
+```kotlin
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    // ...
+    alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.google.services) apply false
+    // ...
+}
+```
+
+### SDK dependencies (app module)
+
+In the `build.gradle.kts` of the application module (for example, `app`), add the SDK dependencies using the catalog:
+
+```kotlin
+dependencies {
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.play.services.location)
+    implementation(libs.datastore.preferences)
+    implementation(libs.datastore.core)
+    implementation(libs.security.crypto)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.hivemq.mqtt.client)
+    implementation(libs.squareup.okio)
+    implementation(libs.squareup.okhttp)
+}
+```
+
+Also make sure the library versions and mappings are defined in `libs.versions.toml`:
+
+```toml
+[versions]
+coreKtx = "1.17.0"
+workRuntimeKtx = "2.11.0"
+playServicesLocation = "21.3.0"
+datastoreVer = "1.2.0"
+securityCryptoVersion = "1.1.0"
+kotlinxSerializationJson = "1.9.0"
+roomVersion = "2.8.4"
+hiveVersion = "1.3.10"
+okhttpVersion = "5.3.2"
+okioVersion = "3.16.4"
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
+play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastoreVer" }
+datastore-core = { module = "androidx.datastore:datastore-core", version.ref = "datastoreVer" }
+security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCryptoVersion" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "roomVersion" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomVersion" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "roomVersion" }
+hivemq-mqtt-client = { module = "com.hivemq:hivemq-mqtt-client", version.ref = "hiveVersion" }
+squareup-okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttpVersion" }
+squareup-okio = { module = "com.squareup.okio:okio", version.ref = "okioVersion" }
+```
+
+### Plugins and configuration in the app `build.gradle`
+
+In the application module `build.gradle.kts`, apply the required plugins:
+
+```kotlin
+plugins {
+    // ...
+    alias(libs.plugins.jetbrains.kotlin.serialization)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.ksp)
+    // ...
+}
+```
+
+And configure the `android` block with the options required by the SDK:
+
+```kotlin
+android {
+    // ...
+
+    defaultConfig {
+        // ...
+        javaCompileOptions.annotationProcessorOptions.arguments.put(
+            "room.schemaLocation",
+            "$projectDir/schemas"
+        )
+        // ...
+    }
+
+    // ...
+
+    packaging {
+        resources {
+            excludes.add("META-INF/INDEX.LIST")
+            excludes.add("META-INF/io.netty.versions.properties")
+        }
+    }
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.incremental", "true")
+    arg("room.expandProjection", "true")
+}
+```
+
 ## Initialization
 
 To initialize the SDK, you must call the `initialize` method passing the application `Context` as a parameter. This returns an instance of the `LocatorSDK`.
