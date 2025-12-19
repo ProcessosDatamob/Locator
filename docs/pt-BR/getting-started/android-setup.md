@@ -167,51 +167,45 @@ Após a inicialização, você pode configurar a SDK de forma unificada. A funç
 ```kotlin
 /**
  * Configura a SDK Locator de forma completa e sequencial.
+ * Exemplo de função para inicialização do SDK para ser usada via WebViewBridge.
  * 
- * @param context Contexto da aplicação
  * @param config Configuração da SDK (LocatorConfig)
- * @param integration Integrador customizado (opcional). Se não fornecido, será usado o DefaultLocatorSDKIntegrationApiImpl
- * @param autoStart Se true, inicia automaticamente a coleta após a configuração
- * @return Result<LocatorSDK> com a instância configurada ou erro
  */
 fun setupLocatorSDK(
-    context: Context,
-    config: LocatorConfig,
-    integration: LocatorIntegration? = null,
-    autoStart: Boolean = false
-): Result<LocatorSDK> {
+    config: LocatorConfig
+): Boolean {
     // 1. Garantir que a SDK está inicializada
+    // Observação: Inserir o contexto da aplicação aqui (Camada nativa Novum)
     LocatorSDK.initialize(initContext = context)
     
     // 2. Obter a instância da SDK
-    return LocatorSDK.getInstance()
+    LocatorSDK.getInstance()
         .onSuccess { sdk ->
-            // 3. Registrar o integrador (se fornecido)
-            // Caso contrário, será usado o DefaultLocatorSDKIntegrationApiImpl
-            integration?.let { sdk.registerIntegration(integration = it) }
-            
-            // 4. Configurar a SDK com o LocatorConfig
+            // 3. Configurar a SDK com o LocatorConfig
             sdk.setConfig(config = config)
             
-            // 5. Iniciar a SDK (se solicitado)
-            if (autoStart) {
-                try {
-                    // 5.1 Necessário setState LocatorState.IDLE para SDK entender que pode sair do estado parada.
-                    sdk.setState(state = LocatorState.IDLE)
-                    sdk.start()
-                } catch (e: LocatorSDKMissingPermissionsException) {
-                    Log.e("LocatorSDK", "Permissões faltando: ${e.message}")
-                    // Tratar permissões faltando
-                } catch (e: LocatorSDKNoConfigSetException) {
-                    Log.e("LocatorSDK", "Configuração não definida: ${e.message}")
-                }
+            // 4. Iniciar a SDK (se solicitado)
+            return try {
+                // 4.1 Necessário setState LocatorState.IDLE para SDK entender que pode sair do estado parada.
+                sdk.setState(state = LocatorState.IDLE)
+                sdk.start()
+                // 4.2 Entra no modo observável
+                sdk.setSdkMode(mode = LocatorSdkMode.OBSERVED)
+                true
+            } catch (e: LocatorSDKMissingPermissionsException) {
+                 // Sugestão: Caso caia nessa excp, pegue as permissões faltando, usando getPendingPermission(), e pode mostrar na tela 
+                Log.e("LocatorSDK", "Permissões faltando: ${e.message}")
+                false
+            } catch (e: LocatorSDKNoConfigSetException) {
+                // Sugestão: Retornar um erro para tentar novamente mais tarde.
+                Log.e("LocatorSDK", "Configuração não definida: ${e.message}")
+                false
             }
-            
-            Result.success(sdk)
         }
         .onFailure { exception ->
             Log.e("LocatorSDK", "Erro ao obter instância: ${exception.message}")
-            Result.failure(exception)
+            // Sugestão: Retornar um erro para tentar novamente mais tarde.
+            false
         }
 }
 ```
