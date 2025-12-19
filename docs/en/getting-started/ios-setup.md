@@ -13,13 +13,13 @@ The SDK follows the definition described in [LocatorService](../reference/servic
 To initialize the SDK, you must access the **shared** instance (`shared`) of the main class, ensuring that the environment is prepared in the application lifecycle (usually in `AppDelegate`).
 
 ```swift
-import LocatorSDK
+import AppLocatorSDK
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // SDK Singleton initialization
         // Prepares the environment for use.
-        LocatorSDK.shared.initialize()
+        AppLocatorSDK.shared.initSDK()
         return true
     }
     // ...
@@ -64,13 +64,13 @@ To use the SDK, you need to initialize it, get an instance, and configure it. Th
 First, initialize the SDK in your application's `AppDelegate`:
 
 ```swift
-import LocatorSDK
+import AppLocatorSDK
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // SDK Singleton initialization
         // Prepares the environment for use.
-        LocatorSDK.shared.initialize()
+        AppLocatorSDK.shared.initSDK()
         return true
     }
     // ...
@@ -89,18 +89,18 @@ After initialization, you can configure the SDK in a unified way. The function b
  *   - config: SDK configuration (LocatorConfig)
  *   - integration: Custom integrator (optional). If not provided, DefaultLocatorSDKIntegrationApiImpl will be used
  *   - autoStart: If true, automatically starts collection after configuration
- * - Returns: Result<LocatorSDK, Error> with the configured instance or error
+ * - Returns: Result<AppLocatorSDK, Error> with the configured instance or error
  */
 func setupLocatorSDK(
     config: LocatorConfig,
     integration: LocatorIntegration? = nil,
     autoStart: Bool = false
-) -> Result<LocatorSDK, Error> {
+) -> Result<AppLocatorSDK, Error> {
     // 1. Ensure SDK is initialized
-    LocatorSDK.shared.initialize()
+    AppLocatorSDK.shared.initialize()
     
     // 2. Get SDK instance
-    switch LocatorSDK.shared() {
+    switch AppLocatorSDK.shared() {
     case .success(let sdk):
         // 3. Register integrator (if provided)
         // Otherwise, DefaultLocatorSDKIntegrationApiImpl will be used
@@ -258,7 +258,7 @@ After configuration, you can start location collection by calling the SDK's `sta
 
 ```swift
 // Start manually after configuration
-switch LocatorSDK.shared() {
+switch AppLocatorSDK.shared() {
 case .success(let sdk):
     do {
         try sdk.start()
@@ -297,7 +297,7 @@ func handleRemoteMessage(userInfo: [AnyHashable: Any]) {
     // Equivalent to 'message.data' on Android
     let notificationMsg = userInfo 
 
-    if LocatorSDK.isLocatorSDKCommand(notificationMsg: notificationMsg) {
+    if AppLocatorSDK.isLocatorSDKCommand(notificationMsg: notificationMsg) {
         // Call to conversion method that returns a Result<LocatorCommand, Error>
         switch LocatorSDK.convertLocatorSDKCommand(notificationMsg: notificationMsg) {
             
