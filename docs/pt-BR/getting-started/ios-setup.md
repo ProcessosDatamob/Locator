@@ -16,13 +16,13 @@ Para a inicialização da SDK, deve-se acessar a instância **compartilhada** (`
   
 
 ```swift
-import LocatorSDK
+import AppLocatorSDK
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
     func  application(_  application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 		// Inicialização do Singleton da SDK
 		// Prepara o ambiente para uso.
-		LocatorSDK.shared.initialize()
+		AppLocatorSDK.shared.initSDK()
 		return  true
 	}
 	// ...
@@ -74,13 +74,13 @@ Para utilizar a SDK, é necessário realizar a inicialização, obter a instânc
 Primeiro, inicialize a SDK no `AppDelegate` da sua aplicação:
 
 ```swift
-import LocatorSDK
+import AppLocatorSDK
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Inicialização do Singleton da SDK
         // Prepara o ambiente para uso.
-        LocatorSDK.shared.initialize()
+        AppLocatorSDK.shared.initSDK()
         return true
     }
     // ...
@@ -105,12 +105,12 @@ func setupLocatorSDK(
     config: LocatorConfig,
     integration: LocatorIntegration? = nil,
     autoStart: Bool = false
-) -> Result<LocatorSDK, Error> {
+) -> Result<AppLocatorSDK, Error> {
     // 1. Garantir que a SDK está inicializada
-    LocatorSDK.shared.initialize()
+    AppLocatorSDK.shared.initialize()
     
     // 2. Obter a instância da SDK
-    switch LocatorSDK.shared() {
+    switch AppLocatorSDK.shared() {
     case .success(let sdk):
         // 3. Registrar o integrador (se fornecido)
         // Caso contrário, será usado o DefaultLocatorSDKIntegrationApiImpl
@@ -268,7 +268,7 @@ Após a configuração, você pode iniciar a coleta de localizações chamando o
 
 ```swift
 // Iniciar manualmente após configuração
-switch LocatorSDK.shared() {
+switch AppLocatorSDK.shared() {
 case .success(let sdk):
     do {
         try sdk.start()
@@ -306,7 +306,7 @@ func handleRemoteMessage(userInfo: [AnyHashable: Any]) {
     // Equivale a 'message.data' no Android
     let notificationMsg = userInfo 
 
-    if LocatorSDK.isLocatorSDKCommand(notificationMsg: notificationMsg) {
+    if AppLocatorSDK.isLocatorSDKCommand(notificationMsg: notificationMsg) {
         // Chamada ao método de conversão que retorna um Result<LocatorCommand, Error>
         switch LocatorSDK.convertLocatorSDKCommand(notificationMsg: notificationMsg) {
             
