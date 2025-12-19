@@ -196,6 +196,8 @@ fun setupLocatorSDK(
             // 5. Start SDK (if requested)
             if (autoStart) {
                 try {
+                     // 5.1 call setState with LocatorState.IDLE value is needed for the SDK to understand that it can exit the stopped state.
+                    sdk.setState(state = LocatorState.IDLE)
                     sdk.start()
                 } catch (e: LocatorSDKMissingPermissionsException) {
                     Log.e("LocatorSDK", "Missing permissions: ${e.message}")
