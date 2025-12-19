@@ -142,9 +142,13 @@ ksp {
 }
 ```
 
-## Initialization
+## Initialization and Configuration
 
-To initialize the SDK, you must call the `initialize` method passing the application `Context` as a parameter. This returns an instance of the `LocatorSDK`.
+To use the SDK, you need to initialize it, get an instance, and configure it. The complete process can be done through a unified function that receives a `LocatorConfig` and executes all steps sequentially.
+
+### Step 1: Initialization in Application
+
+First, initialize the SDK in your application's `Application` class:
 
 ```kotlin
 class Application : Application() {
@@ -156,72 +160,123 @@ class Application : Application() {
 }
 ```
 
-## SDK Instance
+### Step 2: Complete Configuration
 
-To use the SDK, you will need to get an instance of the SDK, which can be done via:
-- `fun getInstance(): Result<LocatorSDK>`
+After initialization, you can configure the SDK in a unified way. The function below receives a `LocatorConfig` and optionally a `LocatorIntegration`, executing all necessary steps:
 
 ```kotlin
-class MainActivity : ComponentActivity() {
-    lateinit var sdk: LocatorSDK
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        //...
-        LocatorSDK.getInstance()
-            .onSuccess { 
-                sdk = it
-                // On success, proceed with configuration
+/**
+ * Configures the Locator SDK completely and sequentially.
+ * 
+ * @param context Application context
+ * @param config SDK configuration (LocatorConfig)
+ * @param integration Custom integrator (optional). If not provided, DefaultLocatorSDKIntegrationApiImpl will be used
+ * @param autoStart If true, automatically starts collection after configuration
+ * @return Result<LocatorSDK> with the configured instance or error
+ */
+fun setupLocatorSDK(
+    context: Context,
+    config: LocatorConfig,
+    integration: LocatorIntegration? = null,
+    autoStart: Boolean = false
+): Result<LocatorSDK> {
+    // 1. Ensure SDK is initialized
+    LocatorSDK.initialize(initContext = context)
+    
+    // 2. Get SDK instance
+    return LocatorSDK.getInstance()
+        .onSuccess { sdk ->
+            // 3. Register integrator (if provided)
+            // Otherwise, DefaultLocatorSDKIntegrationApiImpl will be used
+            integration?.let { sdk.registerIntegration(integration = it) }
+            
+            // 4. Configure SDK with LocatorConfig
+            sdk.setConfig(config = config)
+            
+            // 5. Start SDK (if requested)
+            if (autoStart) {
+                try {
+                    sdk.start()
+                } catch (e: LocatorSDKMissingPermissionsException) {
+                    Log.e("LocatorSDK", "Missing permissions: ${e.message}")
+                    // Handle missing permissions
+                } catch (e: LocatorSDKNoConfigSetException) {
+                    Log.e("LocatorSDK", "Configuration not set: ${e.message}")
+                }
             }
-            .onFailure { exception ->
-                //TODO handle error and initialize SDK
-                //The parameter returned in the failure context is an object of type LocatorSDKNotInitializedException
-            }
-        //...
-    }
-}
-
-class LocatorSDKNotInitializedException :
-    IllegalStateException("LocatorSDK not initialized. Call initialize() first.")
-```
-
-## Configuration
-
-After obtaining the instance, you need to configure the Integrator and LocatorConfig, which will be the SDK's configurator.
-By default, the SDK will have a default Integrator (`DefaultLocatorSDKIntegrationApiImpl`), which will be used as default if no new one is configured.
-
-### Integrator (LocatorIntegration)
-
-The Integrator uses the `LocatorIntegration` interface:
-
-```kotlin
-interface LocatorIntegration {
-    suspend fun getCert(payload: LocatorRequestApiCert): LocatorResponseApiCert
-    suspend fun getToken(payload: LocatorRequestApiToken): LocatorResponseApiToken
-    suspend fun getScopes(payload: LocatorRequestApiScopes): LocatorResponseApiScopes
-    suspend fun getFeatures(payload: LocatorRequestApiFeatures): LocatorResponseApiFeatures
-    suspend fun getConfig(payload: LocatorRequestApiConfig): LocatorResponseApiConfig
-    suspend fun getGroups(payload: LocatorRequestApiGroups): LocatorResponseApiGroups
-    suspend fun getGeofences(payload: LocatorRequestApiGeofenses): LocatorResponseApiGeofenses
-}
-```
-
-If you need a new implementation, just implement this interface.
-To configure the Integrator, use the method `fun registerIntegration(integration: LocatorIntegration)`.
-
-```kotlin
-fun configureSDK() {
-    LocatorSDK.getInstance()
-        .onSuccess { 
-            sdk = it
-            sdk.registerIntegration(integration = LocatorSDKIntegrationApiImpl())
-            //...
+            
+            Result.success(sdk)
+        }
+        .onFailure { exception ->
+            Log.e("LocatorSDK", "Error getting instance: ${exception.message}")
+            Result.failure(exception)
         }
 }
 ```
 
-### LocatorConfig
+### Usage Example
 
-Class used to configure the SDK
+```kotlin
+class MainActivity : ComponentActivity() {
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // Create LocatorConfig with all necessary configurations
+        val locatorConfig = LocatorConfig(
+            license = "your-license-here",
+            sdkVersion = BuildConfig.LIBRARY_VERSION,
+            osPlatform = OS_PLATFORM_ANDROID,
+            mqtt = LocatorMqttConfig(
+                // MQTT configurations
+            ),
+            api = LocatorApiConfig(
+                // API configurations
+            ),
+            process = LocatorProcessConfig(
+                // Process configurations
+            ),
+            battery = LocatorBatteryConfig(
+                // Battery configurations (optional)
+            ),
+            motion = LocatorMotionConfig(
+                // Motion configurations (optional)
+            ),
+            collect = LocatorCollectConfig(
+                // Collection configurations (optional)
+            )
+        )
+        
+        // Optional: Create custom integrator
+        val customIntegration = object : LocatorIntegration {
+            // Implement interface methods
+        }
+        
+        // Configure SDK in a unified way
+        setupLocatorSDK(
+            context = this,
+            config = locatorConfig,
+            integration = customIntegration, // Optional: null to use default
+            autoStart = true // Optional: automatically start after configuration
+        ).onSuccess { sdk ->
+            Log.d("LocatorSDK", "SDK configured and started successfully")
+            // SDK ready to use
+        }.onFailure { exception ->
+            Log.e("LocatorSDK", "Error configuring SDK: ${exception.message}")
+            when (exception) {
+                is LocatorSDKNotInitializedException -> {
+                    // SDK was not initialized
+                }
+                else -> {
+                    // Other errors
+                }
+            }
+        }
+    }
+}
+```
+
+### LocatorConfig Structure
 
 ```kotlin
 data class LocatorConfig(
@@ -240,46 +295,55 @@ data class LocatorConfig(
 )
 ```
 
-```kotlin
-fun configureSDK() {
-    LocatorSDK.getInstance()
-        .onSuccess { 
-            //...
-            //TODO configure all necessary parameters of LocatorConfig
-            sdk.setConfig(config = LocatorConfig())
-            //...
-        }
+### Integrator (LocatorIntegration)
 
+The Integrator uses the `LocatorIntegration` interface:
+
+```kotlin
+interface LocatorIntegration {
+    suspend fun getCert(payload: LocatorRequestApiCert): LocatorResponseApiCert
+    suspend fun getToken(payload: LocatorRequestApiToken): LocatorResponseApiToken
+    suspend fun getScopes(payload: LocatorRequestApiScopes): LocatorResponseApiScopes
+    suspend fun getFeatures(payload: LocatorRequestApiFeatures): LocatorResponseApiFeatures
+    suspend fun getConfig(payload: LocatorRequestApiConfig): LocatorResponseApiConfig
+    suspend fun getGroups(payload: LocatorRequestApiGroups): LocatorResponseApiGroups
+    suspend fun getGeofences(payload: LocatorRequestApiGeofenses): LocatorResponseApiGeofenses
 }
 ```
 
-### SDK Operation Initialization
+By default, the SDK uses `DefaultLocatorSDKIntegrationApiImpl`. If you need a custom implementation, just implement the interface and pass it as a parameter to the `setupLocatorSDK` function.
 
-If everything is configured, you can call the SDK's `start` method. With this, the SDK will begin collecting locations.
+### Exceptions
 
 ```kotlin
-fun configureSDK() {
-    LocatorSDK.getInstance()
-        .onSuccess { 
-            //...
-            try {
-                sdk.start()
-            } catch (e: LocatorSDKMissingPermissionsException) {
-                Log.d("LOC_LogsManager", e.message.orEmpty())
-            } catch (e: LocatorSDKNoConfigSetException) {
-                Log.d("LOC_LogsManager", e.message.orEmpty())
-            }
-            //...
-        }
-
-}
+class LocatorSDKNotInitializedException :
+    IllegalStateException("LocatorSDK not initialized. Call initialize() first.")
 
 class LocatorSDKNoConfigSetException :
     IllegalStateException("LocatorSDK configuration not passed. Call setConfig()/syncConfig() first.")
 
 class LocatorSDKMissingPermissionsException :
     IllegalStateException("LocatorSDK needs permissions. Call pendingPermissions() to receive list of missing permissions first.")
+```
 
+### Starting Location Collection
+
+After configuration, you can start location collection by calling the SDK's `start()` method. This can be done automatically through the `autoStart = true` parameter in the `setupLocatorSDK` function, or manually:
+
+```kotlin
+// Start manually after configuration
+LocatorSDK.getInstance()
+    .onSuccess { sdk ->
+        try {
+            sdk.start()
+            Log.d("LocatorSDK", "Location collection started")
+        } catch (e: LocatorSDKMissingPermissionsException) {
+            Log.e("LocatorSDK", "Missing permissions: ${e.message}")
+            // Check pending permissions with sdk.pendingPermissions()
+        } catch (e: LocatorSDKNoConfigSetException) {
+            Log.e("LocatorSDK", "Configuration not set: ${e.message}")
+        }
+    }
 ```
 
 ## Commands
