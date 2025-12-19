@@ -175,7 +175,7 @@ fun setupLocatorSDK(
     config: LocatorConfig
 ): Boolean {
     // 1. Ensure SDK is initialized
-    // OBS: insert application context
+    // PS: insert application context
     LocatorSDK.initialize(initContext = context)
     
     // 2. Get SDK instance
