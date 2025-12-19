@@ -196,6 +196,7 @@ fun setupLocatorSDK(
             // 5. Iniciar a SDK (se solicitado)
             if (autoStart) {
                 try {
+                    // 5.1 Necessário setState LocatorState.IDLE para SDK entender que pode sair do estado parada.
                     sdk.setState(state = LocatorState.IDLE)
                     sdk.start()
                 } catch (e: LocatorSDKMissingPermissionsException) {
