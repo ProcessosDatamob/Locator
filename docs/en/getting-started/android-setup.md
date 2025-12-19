@@ -167,51 +167,45 @@ After initialization, you can configure the SDK in a unified way. The function b
 ```kotlin
 /**
  * Configures the Locator SDK completely and sequentially.
+ * Fun exemple to start SDK with WebViewBridge.
  * 
- * @param context Application context
- * @param config SDK configuration (LocatorConfig)
- * @param integration Custom integrator (optional). If not provided, DefaultLocatorSDKIntegrationApiImpl will be used
- * @param autoStart If true, automatically starts collection after configuration
- * @return Result<LocatorSDK> with the configured instance or error
+ * @param SDL config (LocatorConfig)
  */
 fun setupLocatorSDK(
-    context: Context,
-    config: LocatorConfig,
-    integration: LocatorIntegration? = null,
-    autoStart: Boolean = false
-): Result<LocatorSDK> {
+    config: LocatorConfig
+): Boolean {
     // 1. Ensure SDK is initialized
+    // OBS: insert application context
     LocatorSDK.initialize(initContext = context)
     
     // 2. Get SDK instance
-    return LocatorSDK.getInstance()
+    LocatorSDK.getInstance()
         .onSuccess { sdk ->
-            // 3. Register integrator (if provided)
-            // Otherwise, DefaultLocatorSDKIntegrationApiImpl will be used
-            integration?.let { sdk.registerIntegration(integration = it) }
-            
-            // 4. Configure SDK with LocatorConfig
+            // 3. Configure SDK with LocatorConfig
             sdk.setConfig(config = config)
             
-            // 5. Start SDK (if requested)
-            if (autoStart) {
-                try {
-                     // 5.1 call setState with LocatorState.IDLE value is needed for the SDK to understand that it can exit the stopped state.
-                    sdk.setState(state = LocatorState.IDLE)
-                    sdk.start()
-                } catch (e: LocatorSDKMissingPermissionsException) {
-                    Log.e("LocatorSDK", "Missing permissions: ${e.message}")
-                    // Handle missing permissions
-                } catch (e: LocatorSDKNoConfigSetException) {
-                    Log.e("LocatorSDK", "Configuration not set: ${e.message}")
-                }
+            // 4. Start SDK (if requested)
+            return try {
+                // 4.1 call setState with LocatorState.IDLE value is needed for the SDK to understand that it can exit the stopped state.
+                sdk.setState(state = LocatorState.IDLE)
+                sdk.start()
+                // 4.2 Enter on observable mode
+                sdk.setSdkMode(mode = LocatorSdkMode.OBSERVED)
+                true
+            } catch (e: LocatorSDKMissingPermissionsException) {
+                 // Suggestion: If you encounter this exception, retrieve the missing permissions using getPendingPermission(), and you can                      // display them on the screen.
+                Log.e("LocatorSDK", "Permissões faltando: ${e.message}")
+                false
+            } catch (e: LocatorSDKNoConfigSetException) {
+                // Suggestion: Return an error to try again later.
+                Log.e("LocatorSDK", "Configuração não definida: ${e.message}")
+                false
             }
-            
-            Result.success(sdk)
         }
         .onFailure { exception ->
-            Log.e("LocatorSDK", "Error getting instance: ${exception.message}")
-            Result.failure(exception)
+            Log.e("LocatorSDK", "Erro ao obter instância: ${exception.message}")
+            // Suggestion: Return an error to try again later.
+            false
         }
 }
 ```
