@@ -79,56 +79,50 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 ### Step 2: Complete Configuration
 
-After initialization, you can configure the SDK in a unified way. The function below receives a `LocatorConfig` and optionally a `LocatorIntegration`, executing all necessary steps:
+After initialization, you can configure the SDK in a unified way. The function below receives a `LocatorConfig` and executes all necessary steps:
 
 ```swift
 /**
- * Configures the Locator SDK completely and sequentially.
- * 
- * - Parameters:
- *   - config: SDK configuration (LocatorConfig)
- *   - integration: Custom integrator (optional). If not provided, DefaultLocatorSDKIntegrationApiImpl will be used
- *   - autoStart: If true, automatically starts collection after configuration
- * - Returns: Result<AppLocatorSDK, Error> with the configured instance or error
+ * Configures and starts the Locator SDK sequentially.
+ *
+ * - Parameter config: SDK configuration (LocatorConfig)
+ * - Returns: Result<Bool, Error> indicating success or failure
  */
 func setupLocatorSDK(
-    config: LocatorConfig,
-    integration: LocatorIntegration? = nil,
-    autoStart: Bool = false
-) -> Result<AppLocatorSDK, Error> {
+    config: LocatorConfig
+) -> Result<Bool, Error> {
+
     // 1. Ensure SDK is initialized
     AppLocatorSDK.shared.initialize()
-    
+
     // 2. Get SDK instance
-    switch AppLocatorSDK.shared() {
+    switch AppLocatorSDK.shared.getInstance() {
+
     case .success(let sdk):
-        // 3. Register integrator (if provided)
-        // Otherwise, DefaultLocatorSDKIntegrationApiImpl will be used
-        if let integration = integration {
-            sdk.registerIntegration(integration: integration)
-        }
-        
-        // 4. Configure SDK with LocatorConfig
+
+        // 3. Configure SDK with LocatorConfig
         sdk.setConfig(config: config)
-        
-        // 5. Start SDK (if requested)
-        if autoStart {
-            do {
-                try sdk.start()
-            } catch let error as LocatorSDKError {
-                print("Error starting SDK: \(error.localizedDescription)")
-                // Handle missing permissions or configuration not set
-                return .failure(error)
-            } catch {
-                print("Unknown error starting SDK: \(error.localizedDescription)")
-                return .failure(error)
-            }
+
+        // 4. Start SDK
+        do {
+            try sdk.start()
+            return .success(true)
+
+        } catch let error as LocatorSDKError {
+            print("Error starting SDK: \(error.localizedDescription)")
+            // Suggestion:
+            // - check pending permissions via getPendingPermissions()
+            // - validate if configuration is complete
+            return .failure(error)
+
+        } catch {
+            print("Unknown error starting SDK: \(error.localizedDescription)")
+            return .failure(error)
         }
-        
-        return .success(sdk)
-        
+
     case .failure(let error):
-        print("Error getting instance: \(error.localizedDescription)")
+        // Error getting SDK instance
+        print("Error getting SDK instance: \(error.localizedDescription)")
         return .failure(error)
     }
 }
@@ -167,18 +161,13 @@ class ViewController: UIViewController {
             )
         )
         
-        // Optional: Create custom integrator
-        let customIntegration: LocatorIntegration? = nil // or your custom implementation
-        
         // Configure SDK in a unified way
-        switch setupLocatorSDK(
-            config: locatorConfig,
-            integration: customIntegration, // Optional: nil to use default
-            autoStart: true // Optional: automatically start after configuration
-        ) {
-        case .success(let sdk):
-            print("SDK configured and started successfully")
-            // SDK ready to use
+        switch setupLocatorSDK(config: locatorConfig) {
+        case .success(let success):
+            if success {
+                print("SDK configured and started successfully")
+                // SDK ready to use
+            }
         case .failure(let error):
             print("Error configuring SDK: \(error.localizedDescription)")
             if let locatorError = error as? LocatorSDKError {
