@@ -196,6 +196,7 @@ fun setupLocatorSDK(
             // 5. Iniciar a SDK (se solicitado)
             if (autoStart) {
                 try {
+                    sdk.setState(state = LocatorState.IDLE)
                     sdk.start()
                 } catch (e: LocatorSDKMissingPermissionsException) {
                     Log.e("LocatorSDK", "Permissões faltando: ${e.message}")
