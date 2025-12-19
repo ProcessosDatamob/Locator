@@ -181,15 +181,15 @@ fun setupLocatorSDK(
     // 2. Obter a instância da SDK
     LocatorSDK.getInstance()
         .onSuccess { sdk ->
-            // 4. Configurar a SDK com o LocatorConfig
+            // 3. Configurar a SDK com o LocatorConfig
             sdk.setConfig(config = config)
             
-            // 5. Iniciar a SDK (se solicitado)
+            // 4. Iniciar a SDK (se solicitado)
             return try {
-                // 5.1 Necessário setState LocatorState.IDLE para SDK entender que pode sair do estado parada.
+                // 4.1 Necessário setState LocatorState.IDLE para SDK entender que pode sair do estado parada.
                 sdk.setState(state = LocatorState.IDLE)
                 sdk.start()
-                // 5.2 Entra no modo observável
+                // 4.2 Entra no modo observável
                 sdk.setSdkMode(mode = LocatorSdkMode.OBSERVED)
                 true
             } catch (e: LocatorSDKMissingPermissionsException) {
