@@ -22,7 +22,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func  application(_  application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 		// Inicialização do Singleton da SDK
 		// Prepara o ambiente para uso.
-		AppLocatorSDK.shared.initSDK()
+		let locatorSdk = LocatorServiceSdk.shared
 		return  true
 	}
 	// ...
@@ -46,11 +46,11 @@ Observação: No Swift, o padrão Result é usado para tratar sucesso ou falha. 
 
 ```swift
 class ViewController: UIViewController {
-	var sdk: LocatorSDK
+	var sdk: LocatorServiceSdk
 	override  func  viewDidLoad() {
 		super.viewDidLoad()
 
-		switch LocatorSDK.shared() {
+		switch LocatorServiceSdk.shared {
 			case .success(let instance):
 				self.sdk = instance
 			case .failure(let error):
@@ -80,7 +80,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Inicialização do Singleton da SDK
         // Prepara o ambiente para uso.
-        AppLocatorSDK.shared.initSDK()
+        LocatorServiceSdk.shared.initSDK()
         return true
     }
     // ...
@@ -103,10 +103,10 @@ func setupLocatorSDK(
 ) -> Result<Bool, Error> {
 
     // 1. Garantir que a SDK está inicializada
-    AppLocatorSDK.shared.initialize()
+    let locatorServiceSdk = LocatorServiceSdk.shared
 
     // 2. Obter a instância da SDK
-    switch AppLocatorSDK.shared.getInstance() {
+    switch locatorServiceSdk {
 
     case .success(let sdk):
 
@@ -257,7 +257,7 @@ Após a configuração, você pode iniciar a coleta de localizações chamando o
 
 ```swift
 // Iniciar manualmente após configuração
-switch AppLocatorSDK.shared() {
+switch LocatorServiceSdk.shared {
 case .success(let sdk):
     do {
         try sdk.start()
@@ -287,7 +287,7 @@ import UserNotifications // Necessário se estiver no AppDelegate
 func handleRemoteMessage(userInfo: [AnyHashable: Any]) {
     
     // Obter a instância da SDK. Assumindo que a inicialização ocorreu no AppDelegate.
-    guard case .success(let sdk) = LocatorSDK.shared() else {
+    guard case .success(let sdk) = locatorServiceSdk.shared else {
         print("Erro: LocatorSDK não inicializada ou indisponível.")
         return 
     }
@@ -295,9 +295,9 @@ func handleRemoteMessage(userInfo: [AnyHashable: Any]) {
     // Equivale a 'message.data' no Android
     let notificationMsg = userInfo 
 
-    if AppLocatorSDK.isLocatorSDKCommand(notificationMsg: notificationMsg) {
+    if LocatorServiceSdk.isLocatorSDKCommand(notificationMsg: notificationMsg) {
         // Chamada ao método de conversão que retorna um Result<LocatorCommand, Error>
-        switch LocatorSDK.convertLocatorSDKCommand(notificationMsg: notificationMsg) {
+        switch LocatorServiceSdk.convertLocatorSDKCommand(notificationMsg: notificationMsg) {
             
         case .success(let command):
             // Equivale a .onSuccess { sdk.execute(command = it) }
