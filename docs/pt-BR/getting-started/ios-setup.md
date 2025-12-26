@@ -8,6 +8,16 @@ Bem-vindo à documentação oficial de **Como implementar a SDK Locator iOS**.
 A SDK segue a definição descrita em [LocatorService](../reference/service.md).
 
 ---
+## Adicionando o Pacote
+
+Para adicionar o pacote do SDK, primeiro deve ser gerado um token de autenticação dentro do `Azure Devops`. Dentro de `User settings`, deve-se ir na seção de `Personal access tokens`. Então, ir em `+ New Token`. Importante que este token tenha a permissão `Read` dentro de seção `Code`. 
+
+Para adicionar o pacote do SDK, deve-se ir no `xcode` -> `File` -> `Add Package Dependencies...`. Ao abrir o dialog do Package Manager, deve ser ir no input de `Search or Enter Package URL`. E buscar pelo seguinte formato:
+
+`https://automator:AZURE_TOKEN@dev.azure.com/datamob/DTB-VIVO-LOCATOR/_git/dtb-vivo-locator-ios`
+
+Preferencialmente, selecionar como `Dependency Rule`, `Up to Next Major Version`
+
 
 ## Inicialização
 
@@ -34,11 +44,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 Para utilizar a SDK será necessário um get da instância da SDK, isto pode ser feito através do:
 
-  
-
+```swift
 static  func  shared() -> Result<LocatorSDK, LocatorSDKError>
-
-  
+```
 
 Observação: No Swift, o padrão Result é usado para tratar sucesso ou falha. A exceção em Kotlin é mapeada para um Error específico no Swift.
 
