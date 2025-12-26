@@ -8,6 +8,16 @@ Bem-vindo à documentação oficial de **Como implementar a SDK Locator iOS**.
 A SDK segue a definição descrita em [LocatorService](../reference/service.md).
 
 ---
+## Adicionando o Pacote
+
+Para adicionar o pacote do SDK, primeiro deve ser gerado um token de autenticação dentro do `Azure Devops`. Dentro de `User settings`, deve-se ir na seção de `Personal access tokens`. Então, ir em `+ New Token`. Importante que este token tenha a permissão `Read` dentro de seção `Code`. 
+
+Para adicionar o pacote do SDK, deve-se ir no `xcode` -> `File` -> `Add Package Dependencies...`. Ao abrir o dialog do Package Manager, deve ser ir no input de `Search or Enter Package URL`. E buscar pelo seguinte formato:
+
+`https://automator:AZURE_TOKEN@dev.azure.com/datamob/DTB-VIVO-LOCATOR/_git/dtb-vivo-locator-ios`
+
+Preferencialmente, selecionar como `Dependency Rule`, `Up to Next Major Version`
+
 
 ## Inicialização
 
@@ -22,7 +32,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func  application(_  application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 		// Inicialização do Singleton da SDK
 		// Prepara o ambiente para uso.
-		AppLocatorSDK.shared.initSDK()
+		let locatorSdk = LocatorServiceSdk.shared
 		return  true
 	}
 	// ...
@@ -34,11 +44,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 Para utilizar a SDK será necessário um get da instância da SDK, isto pode ser feito através do:
 
-  
-
+```swift
 static  func  shared() -> Result<LocatorSDK, LocatorSDKError>
-
-  
+```
 
 Observação: No Swift, o padrão Result é usado para tratar sucesso ou falha. A exceção em Kotlin é mapeada para um Error específico no Swift.
 
@@ -46,11 +54,11 @@ Observação: No Swift, o padrão Result é usado para tratar sucesso ou falha. 
 
 ```swift
 class ViewController: UIViewController {
-	var sdk: LocatorSDK
+	var sdk: LocatorServiceSdk
 	override  func  viewDidLoad() {
 		super.viewDidLoad()
 
-		switch LocatorSDK.shared() {
+		switch LocatorServiceSdk.shared {
 			case .success(let instance):
 				self.sdk = instance
 			case .failure(let error):
@@ -80,7 +88,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Inicialização do Singleton da SDK
         // Prepara o ambiente para uso.
-        AppLocatorSDK.shared.initSDK()
+        LocatorServiceSdk.shared.initSDK()
         return true
     }
     // ...
@@ -103,10 +111,10 @@ func setupLocatorSDK(
 ) -> Result<Bool, Error> {
 
     // 1. Garantir que a SDK está inicializada
-    AppLocatorSDK.shared.initialize()
+    let locatorServiceSdk = LocatorServiceSdk.shared
 
     // 2. Obter a instância da SDK
-    switch AppLocatorSDK.shared.getInstance() {
+    switch locatorServiceSdk {
 
     case .success(let sdk):
 
@@ -257,7 +265,7 @@ Após a configuração, você pode iniciar a coleta de localizações chamando o
 
 ```swift
 // Iniciar manualmente após configuração
-switch AppLocatorSDK.shared() {
+switch LocatorServiceSdk.shared {
 case .success(let sdk):
     do {
         try sdk.start()
@@ -287,7 +295,7 @@ import UserNotifications // Necessário se estiver no AppDelegate
 func handleRemoteMessage(userInfo: [AnyHashable: Any]) {
     
     // Obter a instância da SDK. Assumindo que a inicialização ocorreu no AppDelegate.
-    guard case .success(let sdk) = LocatorSDK.shared() else {
+    guard case .success(let sdk) = locatorServiceSdk.shared else {
         print("Erro: LocatorSDK não inicializada ou indisponível.")
         return 
     }
@@ -295,9 +303,9 @@ func handleRemoteMessage(userInfo: [AnyHashable: Any]) {
     // Equivale a 'message.data' no Android
     let notificationMsg = userInfo 
 
-    if AppLocatorSDK.isLocatorSDKCommand(notificationMsg: notificationMsg) {
+    if LocatorServiceSdk.isLocatorSDKCommand(notificationMsg: notificationMsg) {
         // Chamada ao método de conversão que retorna um Result<LocatorCommand, Error>
-        switch LocatorSDK.convertLocatorSDKCommand(notificationMsg: notificationMsg) {
+        switch LocatorServiceSdk.convertLocatorSDKCommand(notificationMsg: notificationMsg) {
             
         case .success(let command):
             // Equivale a .onSuccess { sdk.execute(command = it) }
