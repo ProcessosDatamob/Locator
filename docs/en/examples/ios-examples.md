@@ -8,6 +8,23 @@ This document contains practical examples of using the Locator SDK for iOS.
 
 This example shows the complete flow of initialization, configuration, and starting the Locator SDK.
 
+Welcome to the official documentation on **How to implement the Locator iOS SDK**.
+
+The SDK follows the definition described in [LocatorService](../reference/service.md).
+
+---
+## Adding the Package
+
+To add the SDK package, you must first generate an authentication token within `Azure Devops`. Inside `User settings`, go to the `Personal access tokens` section. Then, click on `+ New Token`. It is important that this token has the `Read` permission under the `Code` section.
+
+To add the SDK package, go to `xcode` -> `File` -> `Add Package Dependencies...`. When the Package Manager dialog opens, go to the `Search or Enter Package URL` input and search using the following format:
+
+`https://automator:AZURE_TOKEN@dev.azure.com/datamob/DTB-VIVO-LOCATOR/_git/dtb-vivo-locator-ios`
+
+Preferably, select `Up to Next Major Version` as the `Dependency Rule`.
+
+---
+
 ### 1. Basic Initialization
 
 Basic SDK initialization is done in the `AppDelegate`:
@@ -15,12 +32,14 @@ Basic SDK initialization is done in the `AppDelegate`:
 ```swift
 import LocatorSDK
 
+import AppLocatorSDK
+
 class AppDelegate: UIResponder, UIApplicationDelegate {
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Basic initialization
-        LocatorSDK.shared.initialize()
-        return true
-    }
+    func  application(_  application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+		let locatorSdk = LocatorServiceSdk.shared
+		return  true
+	}
+	// ...
 }
 ```
 
@@ -38,7 +57,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let config = createLocatorConfig()
         
         // Initialize with configuration
-        LocatorSDK.shared.initialize(config: config)
+        LocatorServiceSdk.shared.initialize(config: config)
         
         return true
     }
@@ -110,7 +129,7 @@ import LocatorSDK
 import UIKit
 
 class ViewController: UIViewController {
-    var sdk: LocatorSDK?
+    var sdk: LocatorServiceSdk?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -121,7 +140,7 @@ class ViewController: UIViewController {
     
     private func setupLocatorSDK() {
         // 1. Get SDK instance
-        switch LocatorSDK.shared() {
+        switch LocatorServiceSdk.shared() {
         case .success(let instance):
             self.sdk = instance
             
@@ -138,7 +157,7 @@ class ViewController: UIViewController {
             if let locatorError = error as? LocatorSDKError, locatorError == .notInitialized {
                 print("SDK not initialized. Initialize in AppDelegate.")
                 // Try to initialize here if necessary
-                LocatorSDK.shared.initialize()
+                LocatorServiceSdk.shared.initialize()
                 setupLocatorSDK() // Try again
             } else {
                 print("Error getting instance: \(error.localizedDescription)")
@@ -337,7 +356,7 @@ class LocatorManager: ObservableObject {
     @Published var sdkStatus: String = "Not initialized"
     @Published var permissionsNeeded: [String] = []
     
-    private var sdk: LocatorSDK?
+    private var sdk: LocatorServiceSdk?
     private var cancellables = Set<AnyCancellable>()
     
     func initializeSDK() {
@@ -447,7 +466,7 @@ For a more modern approach using async/await:
 import LocatorSDK
 
 class LocatorService {
-    private var sdk: LocatorSDK?
+    private var sdk: LocatorServiceSdk?
     
     func setupAndStart() async throws {
         // 1. Get instance

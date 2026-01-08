@@ -13,13 +13,13 @@ The SDK follows the definition described in [LocatorService](../reference/servic
 To initialize the SDK, you must access the **shared** instance (`shared`) of the main class, ensuring that the environment is prepared in the application lifecycle (usually in `AppDelegate`).
 
 ```swift
-import LocatorSDK
+import AppLocatorSDK
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // SDK Singleton initialization
         // Prepares the environment for use.
-        LocatorSDK.shared.initialize()
+        AppLocatorSDK.shared.initSDK()
         return true
     }
     // ...
@@ -55,47 +55,143 @@ class ViewController: UIViewController {
 
 ---
 
-## Configuration
+## Initialization and Configuration
 
-After obtaining the instance, you need to configure the Integrator and `LocatorConfig`, which will be the SDK's configurator.
+To use the SDK, you need to initialize it, get an instance, and configure it. The complete process can be done through a unified function that receives a `LocatorConfig` and executes all steps sequentially.
 
-By default, the SDK will have a default Integrator (`DefaultLocatorSDKIntegrationApiImpl`), which will be used as default if no new one is configured.
+### Step 1: Initialization in AppDelegate
 
-### Integrator (LocatorIntegration)
-
-The Integrator uses the `LocatorIntegration` protocol:
+First, initialize the SDK in your application's `AppDelegate`:
 
 ```swift
-protocol LocatorIntegration {
-    func getCert(payload: LocatorRequestApiCert) async throws -> LocatorResponseApiCert
-    func getToken(payload: LocatorRequestApiToken) async throws -> LocatorResponseApiToken
-    func getScopes(payload: LocatorRequestApiScopes) async throws -> LocatorResponseApiScopes
-    func getFeatures(payload: LocatorRequestApiFeatures) async throws -> LocatorResponseApiFeatures
-    func getConfig(payload: LocatorRequestApiConfig) async throws -> LocatorResponseApiConfig
-    func getGroups(payload: LocatorRequestApiGroups) async throws -> LocatorResponseApiGroups
-    func getGeofences(payload: LocatorRequestApiGeofences) async throws -> LocatorResponseApiGeofences
+import AppLocatorSDK
+
+class AppDelegate: UIResponder, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // SDK Singleton initialization
+        // Prepares the environment for use.
+        AppLocatorSDK.shared.initSDK()
+        return true
+    }
+    // ...
 }
 ```
 
-If you need a new implementation, just implement this protocol. To configure the Integrator, use the method `func registerIntegration(integration: LocatorIntegration)`.
+### Step 2: Complete Configuration
+
+After initialization, you can configure the SDK in a unified way. The function below receives a `LocatorConfig` and executes all necessary steps:
 
 ```swift
-func configureSDK() {
-    switch LocatorSDK.shared() {
+/**
+ * Configures and starts the Locator SDK sequentially.
+ *
+ * - Parameter config: SDK configuration (LocatorConfig)
+ * - Returns: Result<Bool, Error> indicating success or failure
+ */
+func setupLocatorSDK(
+    config: LocatorConfig
+) -> Result<Bool, Error> {
+
+    // 1. Ensure SDK is initialized
+    AppLocatorSDK.shared.initialize()
+
+    // 2. Get SDK instance
+    switch AppLocatorSDK.shared.getInstance() {
+
     case .success(let sdk):
-        // ...
-        sdk.registerIntegration(integration: LocatorSDKIntegrationApiImpl())
-        // ...
-    case .failure(_):
-        // Handle error
-        break
+
+        // 3. Configure SDK with LocatorConfig
+        sdk.setConfig(config: config)
+
+        // 4. Start SDK
+        do {
+            try sdk.start()
+            return .success(true)
+
+        } catch let error as LocatorSDKError {
+            print("Error starting SDK: \(error.localizedDescription)")
+            // Suggestion:
+            // - check pending permissions via getPendingPermissions()
+            // - validate if configuration is complete
+            return .failure(error)
+
+        } catch {
+            print("Unknown error starting SDK: \(error.localizedDescription)")
+            return .failure(error)
+        }
+
+    case .failure(let error):
+        // Error getting SDK instance
+        print("Error getting SDK instance: \(error.localizedDescription)")
+        return .failure(error)
     }
 }
 ```
 
-### LocatorConfig
+### Usage Example
 
-Struct used to configure the SDK
+```swift
+class ViewController: UIViewController {
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        // Create LocatorConfig with all necessary configurations
+        let locatorConfig = LocatorConfig(
+            license: "your-license-here",
+            sdkVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0",
+            osPlatform: OS_PLATFORM_IOS,
+            mqtt: LocatorMqttConfig(
+                // MQTT configurations
+            ),
+            api: LocatorApiConfig(
+                // API configurations
+            ),
+            process: LocatorProcessConfig(
+                // Process configurations
+            ),
+            battery: LocatorBatteryConfig(
+                // Battery configurations (optional)
+            ),
+            motion: LocatorMotionConfig(
+                // Motion configurations (optional)
+            ),
+            collect: LocatorCollectConfig(
+                // Collection configurations (optional)
+            )
+        )
+        
+        // Configure SDK in a unified way
+        switch setupLocatorSDK(config: locatorConfig) {
+        case .success(let success):
+            if success {
+                print("SDK configured and started successfully")
+                // SDK ready to use
+            }
+        case .failure(let error):
+            print("Error configuring SDK: \(error.localizedDescription)")
+            if let locatorError = error as? LocatorSDKError {
+                switch locatorError {
+                case .notInitialized:
+                    // SDK was not initialized
+                    break
+                case .noConfigSet:
+                    // Configuration not set
+                    break
+                case .missingPermissions:
+                    // Missing permissions
+                    break
+                default:
+                    // Other errors
+                    break
+                }
+            }
+        }
+    }
+}
+```
+
+### LocatorConfig Structure
 
 ```swift
 struct LocatorConfig {
@@ -114,51 +210,56 @@ struct LocatorConfig {
 }
 ```
 
+### Integrator (LocatorIntegration)
+
+The Integrator uses the `LocatorIntegration` protocol:
+
 ```swift
-func configureSDK() {
-    switch LocatorSDK.shared() {
-    case .success(let sdk):
-        // ...
-        // TODO configure all necessary parameters of LocatorConfig
-        let config = LocatorConfig(
-            license: "YOUR_LICENSE", 
-            sdkVersion: "1.0.0", 
-            mqtt: LocatorMqttConfig(/*...*/), 
-            api: LocatorApiConfig(/*...*/), 
-            process: LocatorProcessConfig(/*...*/)
-        )
-        
-        sdk.setConfig(config: config)
-        // ...
-    case .failure(_):
-        // Handle error
-        break
-    }
+protocol LocatorIntegration {
+    func getCert(payload: LocatorRequestApiCert) async throws -> LocatorResponseApiCert
+    func getToken(payload: LocatorRequestApiToken) async throws -> LocatorResponseApiToken
+    func getScopes(payload: LocatorRequestApiScopes) async throws -> LocatorResponseApiScopes
+    func getFeatures(payload: LocatorRequestApiFeatures) async throws -> LocatorResponseApiFeatures
+    func getConfig(payload: LocatorRequestApiConfig) async throws -> LocatorResponseApiConfig
+    func getGroups(payload: LocatorRequestApiGroups) async throws -> LocatorResponseApiGroups
+    func getGeofences(payload: LocatorRequestApiGeofences) async throws -> LocatorResponseApiGeofences
 }
 ```
 
-### SDK Operation Initialization
+By default, the SDK uses `DefaultLocatorSDKIntegrationApiImpl`. If you need a custom implementation, just implement the protocol and pass it as a parameter to the `setupLocatorSDK` function.
 
-If everything is configured, you can call the SDK's `start` method. With this, the SDK will begin collecting locations.
+### Exceptions
+
+SDK exceptions are mapped to the `LocatorSDKError` enum:
 
 ```swift
-func configureSDK() {
-    switch LocatorSDK.shared() {
-    case .success(let sdk):
-        // ...
-        do {
-            try sdk.start()
-        } catch let error as LocatorSDKError {
-            // Handle SDK-specific exceptions mapped to `LocatorSDKError`
-            print("Error starting SDK: \(error.localizedDescription)")
-        } catch {
-            print("Unknown error starting SDK: \(error.localizedDescription)")
-        }
-        // ...
-    case .failure(_):
-        // Handle error
-        break
+enum LocatorSDKError: Error {
+    case notInitialized
+    case noConfigSet
+    case missingPermissions
+    // Other error cases
+}
+```
+
+### Starting Location Collection
+
+After configuration, you can start location collection by calling the SDK's `start()` method. This can be done automatically through the `autoStart = true` parameter in the `setupLocatorSDK` function, or manually:
+
+```swift
+// Start manually after configuration
+switch AppLocatorSDK.shared() {
+case .success(let sdk):
+    do {
+        try sdk.start()
+        print("Location collection started")
+    } catch let error as LocatorSDKError {
+        print("Error starting: \(error.localizedDescription)")
+        // Check pending permissions or missing configuration
+    } catch {
+        print("Unknown error: \(error.localizedDescription)")
     }
+case .failure(let error):
+    print("Error getting instance: \(error.localizedDescription)")
 }
 ```
 
@@ -185,7 +286,7 @@ func handleRemoteMessage(userInfo: [AnyHashable: Any]) {
     // Equivalent to 'message.data' on Android
     let notificationMsg = userInfo 
 
-    if LocatorSDK.isLocatorSDKCommand(notificationMsg: notificationMsg) {
+    if AppLocatorSDK.isLocatorSDKCommand(notificationMsg: notificationMsg) {
         // Call to conversion method that returns a Result<LocatorCommand, Error>
         switch LocatorSDK.convertLocatorSDKCommand(notificationMsg: notificationMsg) {
             
