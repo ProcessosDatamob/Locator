@@ -43,12 +43,47 @@ plugins {
 }
 ```
 
+### Plugins in project `settings.gradle`
+
+In the `settings.gradle.kts` file (root project), add Azure's configurations:
+
+```kotlin
+// ...
+
+dependencyResolutionManagement {
+ // ...
+
+  repositories {
+    // ...
+     maven {
+        url = uri("https://pkgs.dev.azure.com/datamob/_packaging/datamob/maven/v1")
+        name = "Azure"
+        
+        credentials {
+            username = "AZURE_ARTIFACTS"
+            // Personal Azure token generated 
+            // in the User Settings menu
+            
+            // Add or configure where it makes the most sense
+            // for the project, e.g.:
+            // Environment variable, 
+            // gradle.properties or secrets
+            password = "{AZURE_PERSONA_ACCESS_TOKEN}"
+        }
+    }
+  }
+}
+```
+
 ### SDK dependencies (app module)
 
 In the `build.gradle.kts` of the application module (for example, `app`), add the SDK dependencies using the catalog:
 
 ```kotlin
 dependencies {
+    // Add Locator SDK implementation
+    implementation(libs.locator)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.play.services.location)
@@ -69,16 +104,17 @@ Also make sure the library versions and mappings are defined in `libs.versions.t
 
 ```toml
 [versions]
-coreKtx = "1.17.0"
+coreKtx = "1.12.0"
 workRuntimeKtx = "2.11.0"
-playServicesLocation = "21.3.0"
+playServicesLocation = "21.0.1"
 datastoreVer = "1.2.0"
 securityCryptoVersion = "1.1.0"
 kotlinxSerializationJson = "1.9.0"
 roomVersion = "2.8.4"
-hiveVersion = "1.3.10"
+hiveVersion = "1.3.12"
 okhttpVersion = "5.3.2"
 okioVersion = "3.16.4"
+locatorVersion = "{Locator_SDK_Version}"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -94,6 +130,7 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 hivemq-mqtt-client = { module = "com.hivemq:hivemq-mqtt-client", version.ref = "hiveVersion" }
 squareup-okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttpVersion" }
 squareup-okio = { module = "com.squareup.okio:okio", version.ref = "okioVersion" }
+locator = { module = "br.net.datamob:locator", version.ref = "locatorVersion" }
 ```
 
 ### Plugins and configuration in the app `build.gradle`
@@ -240,6 +277,9 @@ class MainActivity : ComponentActivity() {
             ),
             collect = LocatorCollectConfig(
                 // Collection configurations (optional)
+            ),
+            audioRecord = LocatorAudioRecord(
+                // Audio recording settings
             )
         )
         
@@ -354,9 +394,15 @@ class FirebaseService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
         //...
-        if (LocatorSDK.isLocatorSDKCommand(notificationMsg = message.data)) {
-            LocatorSDK.convertLocatorSDKCommand(notificationMsg = "")
-                .onSuccess { sdk.execute(command = it) }
+
+        val commandPayload = message.data["command"]
+            ?: return // Not a Locator SDK command, ignore safely
+        
+        if (LocatorSDK.isLocatorSDKCommand(notificationMsg = commandPayload)) {
+            LocatorSDK.convertLocatorSDKCommand(notificationMsg = commandPayload)
+                .onSuccess { command ->
+                    sdk.execute(command = command)
+                }
                 .onFailure { exception -> 
                     // exception is of type LocatorSDKCommandConverterException
                     // indicating that it was not possible to parse the message into a valid command
@@ -370,5 +416,38 @@ class LocatorSDKCommandConverterException :
     ClassCastException("Error on cast message to LocatorCommand.")
 ```
 
-[< Back](../README.md)
+## SDK Device Replacement Process
 
+After confirming the replacement in the app, call the SDK's `destroy` method to clean up the data, stop data collection processes, geofences, drop detection, and data transmission via MQTT.
+
+
+```kotlin
+// LocatorSDK class instance
+sdk.destroy()
+```
+
+Notify the new device to initialize the SDK, pass the initial configuration, execute the start, and call `syncAll` to retrieve all SDK operating configurations on the new device.
+For this process, see the code snippet described in
+[Step 2: Complete Configuration](#step-2-complete-configuration), adding only the sync all method call after the initial configuration.
+
+```kotlin
+// LocatorSDK class instance
+sdk.syncAll()
+```
+
+
+## Handling SDK start permissions
+
+Added special handling for permissions when initializing location collection via the SDK's start() method.
+
+This behavior consists of validating only the permissions necessary for data collection, permissions related to geolocation services and foreground services, excluding permissions related to other functionalities, such as audio capture, from the start() function.
+
+It's important to note that the pendingPermissions method still returns all the permissions necessary for the SDK to function fully; however, permissions related to audio or telephony data will not interfere with location data collection.
+
+The impact of not accepting these permissions is:
+
+* When entering SOS mode, if the permission(s) are not granted, the SDK will send the SOS mode entry and also send an event indicating that audio capture was not possible due to the permission(s).
+
+* If permission to access telephony data is not granted, there will be no interference with location data collection; however, network data that may be useful for future analysis will not be sent.
+
+[< Back](../README.md)
