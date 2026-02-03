@@ -441,12 +441,11 @@ Adicionado um tratamento especial para permissões na inicialização da coleta 
 
 Este comportamento consiste em, validar apenas permissões necessárias para a realização de coletas, permissões relacionadas a serviços de geolocalização e foreground services, excluindo deste start() permissões relacionadas a outras funcionalidades, como por exemplo, captura de áudio.
 
-Importante ressaltar que, o método pendingPermissions ainda retorna todas as permissões necessárias para a SDK funcionar em sua plenitude, porém permissões relacionadas com áudio ou dados de telefonia, não terão interferência na coleta de localizações.
+Importante ressaltar que, o método pendingPermissions ainda retorna todas as permissões necessárias para a SDK funcionar em sua plenitude, porém permissões relacionadas com áudio, não terão interferência na coleta de localizações.
 
 O impacto do não aceite destas permissões são: 
 
 * Ao entrar no modo SOS, caso a/as permissão/permissões não sejam concedidas, a SDK irá enviar a entrada no modo SOS e enviará também um evento que não foi possível realizar a captura de áudios por conta da permissão/permissões.
 
-* Caso a permissão de dados de telefonia não seja concedida, não haverá interferência nas coletas de localizações, entretanto não será enviados dados de rede que podem ser úteis para analises futuras.
 
 [< Voltar](../README.md)
