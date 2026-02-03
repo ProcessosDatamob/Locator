@@ -442,12 +442,11 @@ Added special handling for permissions when initializing location collection via
 
 This behavior consists of validating only the permissions necessary for data collection, permissions related to geolocation services and foreground services, excluding permissions related to other functionalities, such as audio capture, from the start() function.
 
-It's important to note that the pendingPermissions method still returns all the permissions necessary for the SDK to function fully; however, permissions related to audio or telephony data will not interfere with location data collection.
+It's important to note that the pendingPermissions method still returns all the permissions necessary for the SDK to function fully; however, permissions related to audio data will not interfere with location data collection.
 
 The impact of not accepting these permissions is:
 
 * When entering SOS mode, if the permission(s) are not granted, the SDK will send the SOS mode entry and also send an event indicating that audio capture was not possible due to the permission(s).
 
-* If permission to access telephony data is not granted, there will be no interference with location data collection; however, network data that may be useful for future analysis will not be sent.
 
 [< Back](../README.md)
