@@ -395,7 +395,7 @@ class FirebaseService : FirebaseMessagingService() {
         //...
 
         val commandPayload = message.data["command"]
-            ?: return // Not a Locator SDK command, ignore safely
+            ?: return  // Não é um comando da SDK Locator
 
         if (LocatorSDK.isLocatorSDKCommand(notificationMsg = commandPayload)) {
             LocatorSDK.convertLocatorSDKCommand(notificationMsg = commandPayload)
