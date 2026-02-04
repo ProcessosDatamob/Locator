@@ -4,7 +4,7 @@
 
 Esta seção descreve **todos os tipos estruturados**, seus **campos**, **regras**, **validações**, **quando são usados**, **quem consome**, e exemplos reais em **TypeScript, Kotlin e Swift**.
 
-- `LocatorConfig` e sub-estruturas (API, MQTT, Process, Battery, Motion, Collect)
+- `LocatorConfig` e sub-estruturas (API, MQTT, Process, Battery, Motion, Collect, AudioRecord)
 - Telemetria (`LocatorCollect`, `LocatorEvent`) e pacotes (`LocatorCollectPackage`, `LocatorEventPackage`)
 - Identidade/controle (`LocatorSession`, `LocatorToken`, `LocatorCert`)
 - Catálogos (`LocatorGroups`, `LocatorFeatures`, `LocatorGeofences`)
@@ -421,6 +421,7 @@ export interface LocatorConfig {
   battery?: LocatorBatteryConfig;
   motion?: LocatorMotionConfig;
   collect?: LocatorCollectConfig;
+  audioRecord?: LocatorAudioRecord;
   revision?: number;
   createdAt?: number;
   updatedAt?: number;
@@ -439,6 +440,7 @@ data class LocatorConfig(
     val battery: LocatorBatteryConfig? = null,
     val motion: LocatorMotionConfig? = null,
     val collect: LocatorCollectConfig? = null,
+    val audioRecord: LocatorAudioRecord? = null,
     val revision: Long? = null,
     val createdAt: Long? = null,
     val updatedAt: Long? = null
@@ -457,6 +459,7 @@ struct LocatorConfig {
     let battery: LocatorBatteryConfig?
     let motion: LocatorMotionConfig?
     let collect: LocatorCollectConfig?
+    let audioRecord: LocatorAudioRecord?
     let revision: Int64?
     let createdAt: Int64?
     let updatedAt: Int64?
@@ -1346,5 +1349,65 @@ struct LocatorRequestApiGeofences: LocatorRequestApi {
     let data: Void?
 }
 ```
+
+# 🧩 **2.22 Áudio – `LocatorAudioRecord`**
+
+```ts
+export interface LocatorAudioRecord {
+  recordsCount: number;
+  durationSeconds: number;
+  retryCount: number;
+  intervalSeconds: number;
+  audioServiceNotification?: {
+    title?: string;
+    message?: string;
+  };
+}
+```
+
+#### 🟩 **Kotlin (Android)**
+```kotlin
+@Serializable
+data class LocatorAudioRecord(
+    val recordsCount: Int = 1,
+    val durationSeconds: Int = 60,
+    val retryCount: Int = 1,
+    val intervalSeconds: Int = 60,
+    val audioServiceNotification: AudioServiceNotification
+)
+
+@Serializable
+data class AudioServiceNotification(
+    val title: String? = null,
+    val message: String? = null
+)
+```
+
+#### 🟧 **Swift (iOS)**
+```swift
+struct AudioServiceNotification {
+    let title: String?
+    let message: String?
+}
+
+struct LocatorAudioRecord {
+    let recordsCount: Int,
+    let durationSeconds: Int,
+    let retryCount: Int,
+    let intervalSeconds: Int,
+    let audioServiceNotification: AudioServiceNotification?
+}
+```
+
+### Notas importantes
+
+- `recordsCount`: descreve quantas gravações serão realizadas.
+- `durationSeconds`: descreve o tempo de gravação.
+- `retryCount`: descreve a quantidade de tentativas de envio.
+- `intervalSeconds`: descreve o intervalo entre gravações.
+- No Android, o **foreground notification é obrigatório** para coleta contínua, desta forma é necessário o preenchimento do campo `audioServiceNotification` com os dados de `title` e `message`.
+
+---
+
 
 [< Voltar](../README.md)

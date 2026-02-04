@@ -43,12 +43,45 @@ plugins {
 }
 ```
 
+### Plugins no `settings.gradle` de projeto
+
+No arquivo `settings.gradle.kts` (raiz do projeto), adicione as configurações da Azure:
+
+```kotlin
+// ...
+
+dependencyResolutionManagement {
+ // ...
+
+  repositories {
+    // ...
+     maven {
+        url = uri("https://pkgs.dev.azure.com/datamob/_packaging/datamob/maven/v1")
+        name = "Azure"
+        
+        credentials {
+            username = "AZURE_ARTIFACTS"
+            // Token pessoal Azure gerado no menu de User Settings
+            // Adicione ou configure onde fizer mais sentido
+            // para o projeto, Ex:
+            // Variável de ambiente, arquivo 
+            // gradle.properties ou secrets
+            password = "{AZURE_PERSONA_ACCESS_TOKEN}"
+        }
+    }
+  }
+}
+```
+
 ### Dependências da SDK (módulo app)
 
 No `build.gradle.kts` do módulo da aplicação (por exemplo, `app`), adicione as dependências da SDK usando o catálogo:
 
 ```kotlin
 dependencies {
+    // Adicionar implementation da SDK Locator
+    implementation(libs.locator)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.play.services.location)
@@ -69,16 +102,17 @@ Garanta também que as versões e mapeamentos das bibliotecas estejam definidos 
 
 ```toml
 [versions]
-coreKtx = "1.17.0"
+coreKtx = "1.12.0"
 workRuntimeKtx = "2.11.0"
-playServicesLocation = "21.3.0"
+playServicesLocation = "21.0.1"
 datastoreVer = "1.2.0"
 securityCryptoVersion = "1.1.0"
 kotlinxSerializationJson = "1.9.0"
 roomVersion = "2.8.4"
-hiveVersion = "1.3.10"
+hiveVersion = "1.3.12"
 okhttpVersion = "5.3.2"
 okioVersion = "3.16.4"
+locatorVersion = "{Locator_SDK_Version}"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -94,6 +128,8 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 hivemq-mqtt-client = { module = "com.hivemq:hivemq-mqtt-client", version.ref = "hiveVersion" }
 squareup-okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttpVersion" }
 squareup-okio = { module = "com.squareup.okio:okio", version.ref = "okioVersion" }
+locator = { module = "br.net.datamob:locator", version.ref = "locatorVersion" }
+
 ```
 
 ### Plugins e configurações no `build.gradle` do app
@@ -142,10 +178,13 @@ ksp {
 }
 ```
 
-## Inicialização
-Para a inicialização da SDK, deve-se realizar a chamada do método `initialize` passando como paramêtro o `Contexto` da aplicação. 
-Este já devolvendo uma instância da SDK `LocatorSDK`.
+## Inicialização e Configuração
 
+Para utilizar a SDK, é necessário realizar a inicialização, obter a instância e configurá-la. O processo completo pode ser feito através de uma função unificada que recebe um `LocatorConfig` e executa todos os passos sequencialmente.
+
+### Passo 1: Inicialização no Application
+
+Primeiro, inicialize a SDK no `Application` da sua aplicação:
 
 ```kotlin
 class Application : Application() {
@@ -157,68 +196,122 @@ class Application : Application() {
 }
 ```
 
-## Instância da SDK
-Para utilizar a SDK será necessário um `get` da instância da SDK, isto pode ser feito atrás:
-- `fun getInstance(): Result<LocatorSDK>`
+### Passo 2: Configuração Completa
+
+Após a inicialização, você pode configurar a SDK de forma unificada. A função abaixo recebe um `LocatorConfig` e opcionalmente um `LocatorIntegration`, executando todos os passos necessários:
 
 ```kotlin
-class MainActivity : ComponentActivity() {
-    lateinit var sdk: LocatorSDK
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        //...
-        LocatorSDK.getInstance()
-            .onSuccess { 
-                sdk = it
-                // Em caso de sucesso, seguir com a configuração
-            }
-            .onFailure { exception ->
-                //TODO tratar erro e inicializar a SDK
-                //O paramêtro retornado dentro do contexto de falha é um obj do tipo LocatorSDKNotInitializedException
-            }
-        //...
-    }
-}
-
-class LocatorSDKNotInitializedException :
-    IllegalStateException("LocatorSDK not initialized. Call initialize() first.")
-```
-
-## Configuração
-Após a aquisição da instância é necessário configurar o Integrador e LocatorConfig que será o configurador da SDK.
-Por definição a SDk contará com um Integrador default (`DefaultLocatorSDKIntegrationApiImpl`), 
-que ao não ser configurado um novo tomará este como padrão de uso.
-
-### Integrador (LocatorIntegration)
-O Integrador faz uso da interface `LocatorIntegration`:
-
-```kotlin
-interface LocatorIntegration {
-    suspend fun getCert(payload: LocatorRequestApiCert): LocatorResponseApiCert
-    suspend fun getToken(payload: LocatorRequestApiToken): LocatorResponseApiToken
-    suspend fun getScopes(payload: LocatorRequestApiScopes): LocatorResponseApiScopes
-    suspend fun getFeatures(payload: LocatorRequestApiFeatures): LocatorResponseApiFeatures
-    suspend fun getConfig(payload: LocatorRequestApiConfig): LocatorResponseApiConfig
-    suspend fun getGroups(payload: LocatorRequestApiGroups): LocatorResponseApiGroups
-    suspend fun getGeofences(payload: LocatorRequestApiGeofenses): LocatorResponseApiGeofenses
-}
-```
-Caso da necessidade de uma nova implementação, apenas implementar está interface. 
-Para configuração do Integrador utilizar o método `fun registerIntegration(integration: LocatorIntegration)`.
-
-```kotlin
-fun configureSDK() {
+/**
+ * Configura a SDK Locator de forma completa e sequencial.
+ * Exemplo de função para inicialização do SDK para ser usada via WebViewBridge.
+ * 
+ * @param config Configuração da SDK (LocatorConfig)
+ */
+fun setupLocatorSDK(
+    config: LocatorConfig
+): Boolean {
+    // 1. Garantir que a SDK está inicializada
+    // Observação: Inserir o contexto da aplicação aqui (Camada nativa Novum)
+    LocatorSDK.initialize(initContext = context)
+    
+    // 2. Obter a instância da SDK
     LocatorSDK.getInstance()
-        .onSuccess { 
-            sdk = it
-            sdk.registerIntegration(integration = LocatorSDKIntegrationApiImpl())
-            //...
+        .onSuccess { sdk ->
+            // 3. Configurar a SDK com o LocatorConfig
+            sdk.setConfig(config = config)
+            
+            // 4. Iniciar a SDK (se solicitado)
+            return try {
+                // 4.1 Necessário setState LocatorState.IDLE para SDK entender que pode sair do estado parada.
+                sdk.setState(state = LocatorState.IDLE)
+                sdk.start()
+                // 4.2 Entra no modo observável
+                sdk.setSdkMode(mode = LocatorSdkMode.OBSERVED)
+                true
+            } catch (e: LocatorSDKMissingPermissionsException) {
+                 // Sugestão: Caso caia nessa excp, pegue as permissões faltando, usando getPendingPermission(), e pode mostrar na tela 
+                Log.e("LocatorSDK", "Permissões faltando: ${e.message}")
+                false
+            } catch (e: LocatorSDKNoConfigSetException) {
+                // Sugestão: Retornar um erro para tentar novamente mais tarde.
+                Log.e("LocatorSDK", "Configuração não definida: ${e.message}")
+                false
+            }
+        }
+        .onFailure { exception ->
+            Log.e("LocatorSDK", "Erro ao obter instância: ${exception.message}")
+            // Sugestão: Retornar um erro para tentar novamente mais tarde.
+            false
         }
 }
 ```
 
-### LocatorConfig
-Classe utilizada para configurar a SDK
+### Exemplo de Uso
+
+```kotlin
+class MainActivity : ComponentActivity() {
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // Criar o LocatorConfig com todas as configurações necessárias
+        val locatorConfig = LocatorConfig(
+            license = "sua-licenca-aqui",
+            sdkVersion = BuildConfig.LIBRARY_VERSION,
+            osPlatform = OS_PLATFORM_ANDROID,
+            mqtt = LocatorMqttConfig(
+                // Configurações MQTT
+            ),
+            api = LocatorApiConfig(
+                // Configurações de API
+            ),
+            process = LocatorProcessConfig(
+                // Configurações de processo
+            ),
+            battery = LocatorBatteryConfig(
+                // Configurações de bateria (opcional)
+            ),
+            motion = LocatorMotionConfig(
+                // Configurações de movimento (opcional)
+            ),
+            collect = LocatorCollectConfig(
+                // Configurações de coleta (opcional)
+            ),
+            audioRecord = LocatorAudioRecord(
+                // Configurações da gravação de áudio
+            )
+        )
+        
+        // Opcional: Criar integrador customizado
+        val customIntegration = object : LocatorIntegration {
+            // Implementar métodos da interface
+        }
+        
+        // Configurar a SDK de forma unificada
+        setupLocatorSDK(
+            context = this,
+            config = locatorConfig,
+            integration = customIntegration, // Opcional: null para usar o padrão
+            autoStart = true // Opcional: iniciar automaticamente após configuração
+        ).onSuccess { sdk ->
+            Log.d("LocatorSDK", "SDK configurada e iniciada com sucesso")
+            // SDK pronta para uso
+        }.onFailure { exception ->
+            Log.e("LocatorSDK", "Erro ao configurar SDK: ${exception.message}")
+            when (exception) {
+                is LocatorSDKNotInitializedException -> {
+                    // SDK não foi inicializada
+                }
+                else -> {
+                    // Outros erros
+                }
+            }
+        }
+    }
+}
+```
+
+### Estrutura do LocatorConfig
 
 ```kotlin
 data class LocatorConfig(
@@ -237,45 +330,55 @@ data class LocatorConfig(
 )
 ```
 
-```kotlin
-fun configureSDK() {
-    LocatorSDK.getInstance()
-        .onSuccess { 
-            //...
-            //TODO configure todos os paramêntros necessários do LocatorConfig
-            sdk.setConfig(config = LocatorConfig())
-            //...
-        }
+### Integrador (LocatorIntegration)
 
+O Integrador faz uso da interface `LocatorIntegration`:
+
+```kotlin
+interface LocatorIntegration {
+    suspend fun getCert(payload: LocatorRequestApiCert): LocatorResponseApiCert
+    suspend fun getToken(payload: LocatorRequestApiToken): LocatorResponseApiToken
+    suspend fun getScopes(payload: LocatorRequestApiScopes): LocatorResponseApiScopes
+    suspend fun getFeatures(payload: LocatorRequestApiFeatures): LocatorResponseApiFeatures
+    suspend fun getConfig(payload: LocatorRequestApiConfig): LocatorResponseApiConfig
+    suspend fun getGroups(payload: LocatorRequestApiGroups): LocatorResponseApiGroups
+    suspend fun getGeofences(payload: LocatorRequestApiGeofenses): LocatorResponseApiGeofenses
 }
 ```
 
-### Inicialização do Funcionamento da SDK
-Caso tudo esteja configurado, pode-se chamar o método de `start` da sdk. Com isso a SDK começará a coleta das localizações. 
+Por padrão, a SDK utiliza o `DefaultLocatorSDKIntegrationApiImpl`. Caso precise de uma implementação customizada, apenas implemente a interface e passe como parâmetro na função `setupLocatorSDK`.
+
+### Exceções
 
 ```kotlin
-fun configureSDK() {
-    LocatorSDK.getInstance()
-        .onSuccess { 
-            //...
-            try {
-                sdk.start()
-            } catch (e: LocatorSDKMissingPermissionsException) {
-                Log.d("LOC_LogsManager", e.message.orEmpty())
-            } catch (e: LocatorSDKNoConfigSetException) {
-                Log.d("LOC_LogsManager", e.message.orEmpty())
-            }
-            //...
-        }
-
-}
+class LocatorSDKNotInitializedException :
+    IllegalStateException("LocatorSDK not initialized. Call initialize() first.")
 
 class LocatorSDKNoConfigSetException :
     IllegalStateException("LocatorSDK configuration not passed. Call setConfig()/syncConfig() first.")
 
 class LocatorSDKMissingPermissionsException :
     IllegalStateException("LocatorSDK needs permissions. Call pendingPermissions() to receive list of missing permissions first.")
+```
 
+### Iniciando a Coleta de Localizações
+
+Após a configuração, você pode iniciar a coleta de localizações chamando o método `start()` da SDK. Isso pode ser feito automaticamente através do parâmetro `autoStart = true` na função `setupLocatorSDK`, ou manualmente:
+
+```kotlin
+// Iniciar manualmente após configuração
+LocatorSDK.getInstance()
+    .onSuccess { sdk ->
+        try {
+            sdk.start()
+            Log.d("LocatorSDK", "Coleta de localizações iniciada")
+        } catch (e: LocatorSDKMissingPermissionsException) {
+            Log.e("LocatorSDK", "Permissões faltando: ${e.message}")
+            // Verificar permissões pendentes com sdk.pendingPermissions()
+        } catch (e: LocatorSDKNoConfigSetException) {
+            Log.e("LocatorSDK", "Configuração não definida: ${e.message}")
+        }
+    }
 ```
 
 ## Comandos
@@ -290,9 +393,15 @@ class FirebaseService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
         //...
-        if (LocatorSDK.isLocatorSDKCommand(notificationMsg = message.data)) {
-            LocatorSDK.convertLocatorSDKCommand(notificationMsg = "")
-                .onSuccess { sdk.execute(command = it) }
+
+        val commandPayload = message.data["command"]
+            ?: return  // Não é um comando da SDK Locator
+
+        if (LocatorSDK.isLocatorSDKCommand(notificationMsg = commandPayload)) {
+            LocatorSDK.convertLocatorSDKCommand(notificationMsg = commandPayload)
+                .onSuccess { command ->
+                    sdk.execute(command = command) 
+                }
                 .onFailure { exception -> 
                     // exception é do tipo LocatorSDKCommandConverterException
                     // indicando que não foi possível realizar o parse da msg para um comando válido
@@ -305,5 +414,38 @@ class FirebaseService : FirebaseMessagingService() {
 class LocatorSDKCommandConverterException :
     ClassCastException("Error on cast message to LocatorCommand.")
 ```
+
+## Processo troca de dispositivo SDK
+
+Após confirmação de troca no app, chamar método destroy da SDK para realizar limpeza dos dados, parar processos de coleta, cercas, detecção de queda e envio de dados via MQTT.
+
+```kotlin
+// Instância da classe LocatorSDK
+sdk.destroy()
+```
+
+Notificar novo dispositivo para o mesmo realizar o init da SDK, passar a config inicial, executar o start e chamar o syncAll para realizar a busca de todas as configurações de funcionamento da SDK no novo dispositivo.
+Para este processo olhar trecho de código descrito em
+[Passo 2: Configuração Completa](#passo-2-configuração-completa), adicionar apenas a chamada de método de sync all após a configuração inicial.
+
+
+```kotlin
+// Instância da classe LocatorSDK
+sdk.syncAll()
+```
+
+
+## Tratamento das permissões de start da SDK
+
+Adicionado um tratamento especial para permissões na inicialização da coleta de localizações via método start() da SDK.
+
+Este comportamento consiste em, validar apenas permissões necessárias para a realização de coletas, permissões relacionadas a serviços de geolocalização e foreground services, excluindo deste start() permissões relacionadas a outras funcionalidades, como por exemplo, captura de áudio.
+
+Importante ressaltar que, o método pendingPermissions ainda retorna todas as permissões necessárias para a SDK funcionar em sua plenitude, porém permissões relacionadas com áudio, não terão interferência na coleta de localizações.
+
+O impacto do não aceite destas permissões são: 
+
+* Ao entrar no modo SOS, caso a/as permissão/permissões não sejam concedidas, a SDK irá enviar a entrada no modo SOS e enviará também um evento que não foi possível realizar a captura de áudios por conta da permissão/permissões.
+
 
 [< Voltar](../README.md)
