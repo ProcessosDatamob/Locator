@@ -566,26 +566,6 @@ enum class LocatorPermission(val value: String, val permission: String) {
         value = "location_background",
         permission = "android.permission.ACCESS_BACKGROUND_LOCATION"
     ),
-    ACTIVITY_RECOGNITION(
-        value = "activity_recognition",
-        permission = "android.permission.ACTIVITY_RECOGNITION"
-    ),
-    ACTIVITY_RECOGNITION_HIGH_RATE_SENSORS(
-        value = "activity_recognition_high_rate_sensors",
-        permission = "android.permission.HIGH_SAMPLING_RATE_SENSORS"
-    ),
-    BODY_SENSORS(
-        value = "body_sensors",
-        permission = "android.permission.health.READ_HEART_RATE"
-    ),
-    BODY_SENSORS_BACKGROUND(
-        value = "body_sensors_background",
-        permission = "android.permission.health.READ_HEART_RATE"
-    ),
-    BATTERY_OPTIMIZATION(
-        value = "battery_optimization",
-        permission = ""
-    ),
     FOREGROUND_SERVICE(
         value = "foreground_service",
         permission = "android.permission.FOREGROUND_SERVICE"
@@ -594,11 +574,30 @@ enum class LocatorPermission(val value: String, val permission: String) {
         value = "foreground_service_location",
         permission = "android.permission.FOREGROUND_SERVICE_LOCATION"
     ),
+    FOREGROUND_SERVICE_MICROPHONE(
+        value = "foreground_service_microphone",
+        permission = "android.permission.FOREGROUND_SERVICE_MICROPHONE"
+    ),
+    ACTIVITY_RECOGNITION(
+        value = "activity_recognition",
+        permission = "android.permission.ACTIVITY_RECOGNITION"
+    ),
+    BATTERY_OPTIMIZATION(
+        value = "battery_optimization",
+        permission = "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+    ),
     ACCESS_NETWORK_STATE(
         value = "access_network_state",
         permission = "android.permission.ACCESS_NETWORK_STATE"
     ),
-    NONE(value = "none", permission = "none");
+    RECORD_AUDIO(
+        value = "record_audio",
+        permission = "android.permission.RECORD_AUDIO"
+    ),
+    WAKE_LOCK(
+        value = "wake_lock",
+        permission = "android.permission.WAKE_LOCK"
+    );
 
     companion object {
         fun getTypeFrom(value: String): LocatorPermission =
