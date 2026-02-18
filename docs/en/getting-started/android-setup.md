@@ -226,8 +226,6 @@ fun setupLocatorSDK(
                 // 4.1 call setState with LocatorState.IDLE value is needed for the SDK to understand that it can exit the stopped state.
                 sdk.setState(state = LocatorState.IDLE)
                 sdk.start()
-                // 4.2 Enter on observable mode
-                sdk.setSdkMode(mode = LocatorSdkMode.OBSERVED)
                 true
             } catch (e: LocatorSDKMissingPermissionsException) {
                  // Suggestion: If you encounter this exception, retrieve the missing permissions using getPendingPermission(), and you can                      // display them on the screen.
@@ -312,7 +310,17 @@ class MainActivity : ComponentActivity() {
 }
 ```
 
-### LocatorConfig Structure
+### Step 3: Init Observed Mode
+
+For the SDK Locator to enter observable mode, it collects and sends data in real time using the `collectObservedModeIntervalMillis` parameter of the `LocatorConfig` object as a collection interval reference.
+
+```kotlin
+// After obtaining the SDK Locator instance, simply call
+sdk.setSdkMode(mode = LocatorSdkMode.OBSERVED)
+```
+
+
+## LocatorConfig Structure
 
 ```kotlin
 data class LocatorConfig(
@@ -331,7 +339,7 @@ data class LocatorConfig(
 )
 ```
 
-### Integrator (LocatorIntegration)
+## Integrator (LocatorIntegration)
 
 The Integrator uses the `LocatorIntegration` interface:
 
@@ -349,7 +357,7 @@ interface LocatorIntegration {
 
 By default, the SDK uses `DefaultLocatorSDKIntegrationApiImpl`. If you need a custom implementation, just implement the interface and pass it as a parameter to the `setupLocatorSDK` function.
 
-### Exceptions
+## Exceptions
 
 ```kotlin
 class LocatorSDKNotInitializedException :
@@ -362,7 +370,7 @@ class LocatorSDKMissingPermissionsException :
     IllegalStateException("LocatorSDK needs permissions. Call pendingPermissions() to receive list of missing permissions first.")
 ```
 
-### Starting Location Collection
+## Starting Location Collection
 
 After configuration, you can start location collection by calling the SDK's `start()` method. This can be done automatically through the `autoStart = true` parameter in the `setupLocatorSDK` function, or manually:
 
@@ -448,5 +456,65 @@ The impact of not accepting these permissions is:
 
 * When entering SOS mode, if the permission(s) are not granted, the SDK will send the SOS mode entry and also send an event indicating that audio capture was not possible due to the permission(s).
 
+## Audio recording functionality after device initialization in SOS mode (optional)
+
+Due to restrictions in the Android operating system, it is not possible to start recording audio after the device has been initialized.
+
+When the device is turned off and the SDK Mode is set to SOS, the SDK's behavior is to start the real-time data collection service, send an event to MQTT indicating that the device has entered SOS mode, and begin recording. However, due to limitations, it will not be possible to start audio recording, the user will need to open the app once to access the device's microphone.
+
+With this behavior, when the SDK Locator receives the system's signal to complete initialization, it will begin collecting real-time locations, sending the event to MQTT, and posting a notification with an app opening action using deeplink data configurable in the `audioRecord` parameter of the `LocatorConfig` object.
+
+> The audio recording stream is **optional**; you can either omit the `bootNotification` parameter within `audioRecord` of the `LocatorConfig` object or simply set it to null.
+
+```kotlin
+data class LocatorConfig(
+    val license: String,
+    val sdkVersion: String = BuildConfig.LIBRARY_VERSION,
+    val osPlatform: String = OS_PLATFORM_ANDROID,
+    val mqtt: LocatorMqttConfig,
+    val api: LocatorApiConfig,
+    val process: LocatorProcessConfig,
+    val battery: LocatorBatteryConfig? = null,
+    val motion: LocatorMotionConfig? = null,
+    val collect: LocatorCollectConfig? = null,
+    val audioRecord: LocatorAudioRecord? = null,
+    val revision: Long? = null,
+    val createdAt: Long? = null,
+    val updatedAt: Long? = null
+)
+
+data class LocatorAudioRecord(
+    val recordsCount: Int = 1,
+    val durationSeconds: Int = 60,
+    val retryCount: Int = 1,
+    val intervalSeconds: Int = 60,
+    val audioServiceNotification: AudioServiceNotification,
+    val bootNotification: AudioServiceNotification? = null
+)
+
+data class AudioServiceNotification(
+    val title: String? = null,
+    val message: String? = null,
+    val deeplinkValue: String? = null,
+    val deeplinkKey: String? = null
+)
+```
+
+We will use deeplink and deeplink Value parameters in that way:
+
+```kotlin
+
+val audioRecord = sdk.getConfig().audioRecord
+
+// Intent used to create the PendingIntent used in the Notification.
+
+val intent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+    putExtra(
+        audioRecord?.bootNotification?.deeplinkKey,
+        audioRecord?.bootNotification?.deeplinkValue
+        )
+    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+}
+```
 
 [< Back](../README.md)
