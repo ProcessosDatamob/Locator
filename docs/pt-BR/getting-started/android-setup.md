@@ -455,7 +455,7 @@ O impacto do não aceite destas permissões são:
 
 * Ao entrar no modo SOS, caso a/as permissão/permissões não sejam concedidas, a SDK irá enviar a entrada no modo SOS e enviará também um evento que não foi possível realizar a captura de áudios por conta da permissão/permissões.
 
-## Funcionamento da gravação de áudio após a inicialização do dispositivo
+## Funcionamento da gravação de áudio após a inicialização do dispositivo modo SOS (opcional)
 
 Devido a restrições do sistema operacional Android é inviável iniciar uma coleta de áudio após a inicialização do dispositivo.
 
@@ -463,6 +463,8 @@ Quando o dispositivo for desligado e o SDK Mode for SOS, o comportamento da SDK 
 entretanto por restrições não será possível iniciar a gravação de áudio, sendo necessário o usuário abrir o app uma vez para termos acesso ao MIC do dispositivo.
 
 Tendo este comportamento, a SDK Locator ao receber do sistema o termino da inicialização, iniciará a coleta de localizações em tempo real, envio do evento para o MQTT e postará uma notificação com ação de abertura do app com dados de deeplink configuráveis no parâmetro `audioRecord` do objeto `LocatorConfig`.
+
+> Fluxo da gravação de áudio é **opcional**, é possível não passar o parâmetro `bootNotification` dentro de `audioRecord` do objeto `LocatorConfig` ou apenas setar como `null`.
 
 ```kotlin
 data class LocatorConfig(
@@ -487,7 +489,7 @@ data class LocatorAudioRecord(
     val retryCount: Int = 1,
     val intervalSeconds: Int = 60,
     val audioServiceNotification: AudioServiceNotification,
-    val bootNotification: AudioServiceNotification
+    val bootNotification: AudioServiceNotification? = null
 )
 
 data class AudioServiceNotification(
