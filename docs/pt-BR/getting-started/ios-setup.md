@@ -1,326 +1,850 @@
-
-# Configuração iOS
+# iOS Setup
 
 [< Voltar](../README.md)
 
 Bem-vindo à documentação oficial de **Como implementar a SDK Locator iOS**.
 
-A SDK segue a definição descrita em [LocatorService](../reference/service.md).
+---
+
+## Permissions
+
+O SDK necessita que sejam solicitadas algumas permissões ao usuário para que as funcionalidades possam funcionar. Para isso você precisa adicionar as seguintes chaves abaixo no arquivo `info.plist` do seu aplicativo.
+
+```xml
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>Este aplicativo precisa de acesso à localização para funcionar corretamente.</string>
+
+<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+<string>Este aplicativo precisa de acesso à localização em background para funcionar corretamente.</string>
+
+<key>NSMicrophoneUsageDescription</key>
+<string>Este aplicativo precisa de acesso ao microfone.</string>
+
+<key>NSMotionUsageDescription</key>
+<string>Este aplicativo precisa acessar os dados do acelerômetro para detectar quedas.</string>
+```
 
 ---
-## Adicionando o Pacote
 
-Para adicionar o pacote do SDK, primeiro deve ser gerado um token de autenticação dentro do `Azure Devops`. Dentro de `User settings`, deve-se ir na seção de `Personal access tokens`. Então, ir em `+ New Token`. Importante que este token tenha a permissão `Read` dentro de seção `Code`. 
+## Capabilities
 
-Para adicionar o pacote do SDK, deve-se ir no `xcode` -> `File` -> `Add Package Dependencies...`. Ao abrir o dialog do Package Manager, deve ser ir no input de `Search or Enter Package URL`. E buscar pelo seguinte formato:
+O SDK necessita que sejam adicionadas algumas capabilities ao aplicativo. Para isso você precisa adicionar as seguintes chaves abaixo no arquivo `info.plist` do seu aplicativo.
 
-`https://automator:AZURE_TOKEN@dev.azure.com/datamob/DTB-VIVO-LOCATOR/_git/dtb-vivo-locator-ios`
+```xml
+<key>UIBackgroundModes</key>
+<array>
+    <string>fetch</string>
+    <string>processing</string>
+    <string>location</string>
+</array>
+```
 
-Preferencialmente, selecionar como `Dependency Rule`, `Up to Next Major Version`
+---
 
+## Background Tasks
 
-## Inicialização
+O SDK necessita que sejam adicionados os identificadores das tarefas que serão agendadas para serem executadas em background. Para isso você precisa adicionar as seguintes chaves abaixo no arquivo `info.plist` do seu aplicativo.
 
-Para a inicialização da SDK, deve-se acessar a instância **compartilhada** (`shared`) da classe principal, garantindo que o ambiente esteja preparado no ciclo de vida da aplicação (geralmente no `AppDelegate`).
+```xml
+<key>BGTaskSchedulerPermittedIdentifiers</key>
+<array>
+    <string>br.net.datamob.locator.background.task.location</string>
+</array>
+```
 
-  
+---
+
+## Initialization
+
+Para começar a usar o SDK você precisa inicializar ele, recomendamos que você faça a inicialização no método `application(_:didFinishLaunchingWithOptions:)` do `AppDelegate`. Caso você não faça uso do arquivo `AppDelegate`, inicialize o SDK na classe que inicia o seu aplicativo.
 
 ```swift
 import AppLocatorSDK
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
-    func  application(_  application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-		// Inicialização do Singleton da SDK
-		// Prepara o ambiente para uso.
-		let locatorSdk = LocatorServiceSdk.shared
-		return  true
-	}
-	// ...
-}
-```
-  
-
-## Instância da SDK
-
-Para utilizar a SDK será necessário um get da instância da SDK, isto pode ser feito através do:
-
-```swift
-static  func  shared() -> Result<LocatorSDK, LocatorSDKError>
-```
-
-Observação: No Swift, o padrão Result é usado para tratar sucesso ou falha. A exceção em Kotlin é mapeada para um Error específico no Swift.
-
-  
-
-```swift
-class ViewController: UIViewController {
-	var sdk: LocatorServiceSdk
-	override  func  viewDidLoad() {
-		super.viewDidLoad()
-
-		switch LocatorServiceSdk.shared {
-			case .success(let instance):
-				self.sdk = instance
-			case .failure(let error):
-				print("Erro ao obter instância da SDK: \(error.localizedDescription)")
-				if  let locatorError = error as? LocatorSDKError, locatorError == .notInitialized {
-				// Tentar inicializar ou mostrar uma mensagem de erro
-				}
-		}
-	}
-}
-  ```
-
----
-
-## Inicialização e Configuração
-
-Para utilizar a SDK, é necessário realizar a inicialização, obter a instância e configurá-la. O processo completo pode ser feito através de uma função unificada que recebe um `LocatorConfig` e executa todos os passos sequencialmente.
-
-### Passo 1: Inicialização no AppDelegate
-
-Primeiro, inicialize a SDK no `AppDelegate` da sua aplicação:
-
-```swift
-import AppLocatorSDK
-
-class AppDelegate: UIResponder, UIApplicationDelegate {
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Inicialização do Singleton da SDK
-        // Prepara o ambiente para uso.
-        LocatorServiceSdk.shared.initSDK()
-        return true
+  func  application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+    Task {
+      do {
+        try await LocatorServiceSdk.shared.start()
+      } catch {
+        print("Failed to start Locator SDK: \(error.localizedDescription)")
+      }
     }
-    // ...
-}
-```
-
-### Passo 2: Configuração Completa
-
-Após a inicialização, você pode configurar a SDK de forma unificada. A função abaixo recebe um `LocatorConfig` e executa todos os passos necessários:
-
-```swift
-/**
- * Configura e inicia a SDK Locator de forma sequencial.
- *
- * - Parameter config: Configuração da SDK (LocatorConfig)
- * - Returns: Result<Bool, Error> indicando sucesso ou falha
- */
-func setupLocatorSDK(
-    config: LocatorConfig
-) -> Result<Bool, Error> {
-
-    // 1. Garantir que a SDK está inicializada
-    let locatorServiceSdk = LocatorServiceSdk.shared
-
-    // 2. Obter a instância da SDK
-    switch locatorServiceSdk {
-
-    case .success(let sdk):
-
-        // 3. Configurar a SDK com o LocatorConfig
-        sdk.setConfig(config: config)
-
-        // 4. Iniciar a SDK
-        do {
-            try sdk.start()
-            return .success(true)
-
-        } catch let error as LocatorSDKError {
-            print("Erro ao iniciar SDK: \(error.localizedDescription)")
-            // Sugestão:
-            // - verificar permissões pendentes via getPendingPermissions()
-            // - validar se a configuração está completa
-            return .failure(error)
-
-        } catch {
-            print("Erro desconhecido ao iniciar SDK: \(error.localizedDescription)")
-            return .failure(error)
-        }
-
-    case .failure(let error):
-        // Erro ao obter instância da SDK
-        print("Erro ao obter instância da SDK: \(error.localizedDescription)")
-        return .failure(error)
-    }
-}
-```
-
-### Exemplo de Uso
-
-```swift
-class ViewController: UIViewController {
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        // Criar o LocatorConfig com todas as configurações necessárias
-        let locatorConfig = LocatorConfig(
-            license: "sua-licenca-aqui",
-            sdkVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0",
-            osPlatform: OS_PLATFORM_IOS,
-            mqtt: LocatorMqttConfig(
-                // Configurações MQTT
-            ),
-            api: LocatorApiConfig(
-                // Configurações de API
-            ),
-            process: LocatorProcessConfig(
-                // Configurações de processo
-            ),
-            battery: LocatorBatteryConfig(
-                // Configurações de bateria (opcional)
-            ),
-            motion: LocatorMotionConfig(
-                // Configurações de movimento (opcional)
-            ),
-            collect: LocatorCollectConfig(
-                // Configurações de coleta (opcional)
-            )
-        )
-        
-        // Configurar a SDK de forma unificada
-        switch setupLocatorSDK(config: locatorConfig) {
-        case .success(let success):
-            if success {
-                print("SDK configurada e iniciada com sucesso")
-                // SDK pronta para uso
-            }
-        case .failure(let error):
-            print("Erro ao configurar SDK: \(error.localizedDescription)")
-            if let locatorError = error as? LocatorSDKError {
-                switch locatorError {
-                case .notInitialized:
-                    // SDK não foi inicializada
-                    break
-                case .noConfigSet:
-                    // Configuração não definida
-                    break
-                case .missingPermissions:
-                    // Permissões faltando
-                    break
-                default:
-                    // Outros erros
-                    break
-                }
-            }
-        }
-    }
+    return true
+  }
 }
 ```
 
-### Estrutura do LocatorConfig
+---
+
+## Funções Disponíveis
+
+O SDK conta com diversas funções disponíveis para configurar e obter dados. Abaixo vamos listar e explicar cada uma delas, com exemplos simples utilizando a classe `MyClass`.
+
+### Função `destroy`
+
+Utilizado para apagar os registros coletados e que estão persistidos no dispositivo e colocar o SDK em modo default.
 
 ```swift
-struct LocatorConfig {
-    let license: String
-    let sdkVersion: String // Equivalente a BuildConfig.LIBRARY_VERSION
-    let osPlatform: String = OS_PLATFORM_IOS
-    let mqtt: LocatorMqttConfig
-    let api: LocatorApiConfig
-    let process: LocatorProcessConfig
-    let battery: LocatorBatteryConfig?
-    let motion: LocatorMotionConfig?
-    let collect: LocatorCollectConfig?
-    let revision: Int? // Tipo Long em Kotlin é Int/Int64 em Swift
-    let createdAt: Int?
-    let updatedAt: Int?
-}
+public func destroy() async throws
 ```
 
-### Integrador (LocatorIntegration)
-
-O Integrador faz uso do protocolo `LocatorIntegration`:
+Exemplo de utilização:
 
 ```swift
-protocol LocatorIntegration {
-    func getCert(payload: LocatorRequestApiCert) async throws -> LocatorResponseApiCert
-    func getToken(payload: LocatorRequestApiToken) async throws -> LocatorResponseApiToken
-    func getScopes(payload: LocatorRequestApiScopes) async throws -> LocatorResponseApiScopes
-    func getFeatures(payload: LocatorRequestApiFeatures) async throws -> LocatorResponseApiFeatures
-    func getConfig(payload: LocatorRequestApiConfig) async throws -> LocatorResponseApiConfig
-    func getGroups(payload: LocatorRequestApiGroups) async throws -> LocatorResponseApiGroups
-    func getGeofences(payload: LocatorRequestApiGeofences) async throws -> LocatorResponseApiGeofences
-}
-```
+import AppLocatorSDK
 
-Por padrão, a SDK utiliza o `DefaultLocatorSDKIntegrationApiImpl`. Caso precise de uma implementação customizada, apenas implemente o protocolo e passe como parâmetro na função `setupLocatorSDK`.
-
-### Exceções
-
-As exceções da SDK são mapeadas para o enum `LocatorSDKError`:
-
-```swift
-enum LocatorSDKError: Error {
-    case notInitialized
-    case noConfigSet
-    case missingPermissions
-    // Outros casos de erro
-}
-```
-
-### Iniciando a Coleta de Localizações
-
-Após a configuração, você pode iniciar a coleta de localizações chamando o método `start()` da SDK. Isso pode ser feito automaticamente através do parâmetro `autoStart = true` na função `setupLocatorSDK`, ou manualmente:
-
-```swift
-// Iniciar manualmente após configuração
-switch LocatorServiceSdk.shared {
-case .success(let sdk):
+class MyClass {
+  func  didUserNeedsDestroy() async {
     do {
-        try sdk.start()
-        print("Coleta de localizações iniciada")
-    } catch let error as LocatorSDKError {
-        print("Erro ao iniciar: \(error.localizedDescription)")
-        // Verificar permissões pendentes ou configuração faltando
+      try await LocatorServiceSdk.shared.destroy()
     } catch {
-        print("Erro desconhecido: \(error.localizedDescription)")
+      print("Failed to destroy SDK data: \(error.localizedDescription)")
     }
-case .failure(let error):
-    print("Erro ao obter instância: \(error.localizedDescription)")
+  }
 }
 ```
 
-### Comandos 
-Para validar se um comando deve ser executado pela SDK Locator, faça uso do método `isLocatorSDKCommand`. Caso seja de propriedade da SDK, utilize `convertLocatorSDKCommand` para converter a mensagem e `execute` para que a SDK rode o comando. Ambos os métodos são pertencentes a classe `LocatorSDK` como métodos estáticos/de classe, sendo assim não há necessidade de uma instância para realizar a chamada dos métodos. 
+---
 
- Observação: A notificação de mensagem remota é tratada no `AppDelegate` no método `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)` ou métodos relacionados em uma classe de serviço, se aplicável.
+### Função `execute`
+
+Utilizado para executar um comando específico.
 
 ```swift
-import Foundation
-import UserNotifications // Necessário se estiver no AppDelegate
+public func execute(_ command: LocatorCommand) async throws -> LocatorCommandResult?
+```
 
-// Assumindo que esta função é chamada após a recepção de dados do FCM 
-// (e.g., dentro do AppDelegate no método 'application(_:didReceiveRemoteNotification:fetchCompletionHandler:)')
-func handleRemoteMessage(userInfo: [AnyHashable: Any]) {
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsExecute() async {
+    let command = LocatorCommand()
     
-    // Obter a instância da SDK. Assumindo que a inicialização ocorreu no AppDelegate.
-    guard case .success(let sdk) = locatorServiceSdk.shared else {
-        print("Erro: LocatorSDK não inicializada ou indisponível.")
-        return 
+    do {
+      let result = try await LocatorServiceSdk.shared.execute(command)
+      print("Command result: \(String(describing: result))")
+    } catch {
+      print("Failed to execute command: \(error.localizedDescription)")
     }
-    
-    // Equivale a 'message.data' no Android
-    let notificationMsg = userInfo 
-
-    if LocatorServiceSdk.isLocatorSDKCommand(notificationMsg: notificationMsg) {
-        // Chamada ao método de conversão que retorna um Result<LocatorCommand, Error>
-        switch LocatorServiceSdk.convertLocatorSDKCommand(notificationMsg: notificationMsg) {
-            
-        case .success(let command):
-            // Equivale a .onSuccess { sdk.execute(command = it) }
-            do {
-                try sdk.execute(command: command)
-                print("Comando da SDK executado com sucesso.")
-            } catch {
-                // Tratar erros de execução do comando (se execute for um método throw)
-                print("Erro ao executar o comando da SDK: \(error.localizedDescription)")
-            }
-
-        case .failure(let exception):
-            // Equivale a .onFailure { exception -> ... }
-            // exception é do tipo LocatorSDKCommandConverterError (ou similar)
-            print("Erro de conversão de comando: \(exception.localizedDescription)")
-        }
-    }
+  }
 }
+```
+
+---
+
+### Função `getConfig`
+
+Utilizado para obter as configurações atuais do SDK.
+
+```swift
+public func getConfig() -> LocatorConfig?
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsGetConfig() {
+    let configs = LocatorServiceSdk.shared.getConfig()
+    print("Current config: \(String(describing: configs))")
+  }
+}
+```
+
+---
+
+### Função `getFeatures`
+
+Utilizado para obter a lista de funcionalidades disponíveis no SDK.
+
+```swift
+public func getFeatures() -> LocatorFeatures
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsGetFeatures() {
+    let features = LocatorServiceSdk.shared.getFeatures()
+    print("Features: \(features.features)")
+  }
+}
+```
+
+---
+
+### Função `getGroups`
+
+Utilizado para obter os grupos configurados no SDK.
+
+```swift
+public func getGroups() -> LocatorGroups
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsGetGroups() {
+    let groups = LocatorServiceSdk.shared.getGroups()
+    print("Groups: \(groups.all)")
+  }
+}
+```
+
+---
+
+### Função `getJwtToken`
+
+Utilizado para obter o token JWT utilizado na comunicação via WebSocket (WSS).
+
+```swift
+public func getJwtToken() -> String
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsGetJwtToken() {
+    let token = LocatorServiceSdk.shared.getJwtToken()
+    print("JWT Token: \(token)")
+  }
+}
+```
+
+---
+
+### Função `getSdkMode`
+
+Utilizado para obter o modo atual de operação do SDK.
+
+```swift
+public func getSdkMode() -> LocatorSdkMode
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsGetSdkMode() {
+    let mode = LocatorServiceSdk.shared.getSdkMode()
+    print("SDK Mode: \(mode)")
+  }
+}
+```
+
+---
+
+### Função `getSession`
+
+Utilizado para obter informações da sessão atual do SDK.
+
+```swift
+public func getSession() -> LocatorSession
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsGetSession() {
+    let session = LocatorServiceSdk.shared.getSession()
+    print("Session id: \(session.id)")
+    print("Session start: \(session.startAt)")
+    print("Session end: \(String(describing: session.endAt))")
+  }
+}
+```
+
+---
+
+### Função `getState`
+
+Utilizado para obter o estado atual do SDK.
+
+```swift
+public func getState() -> LocatorState
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsGetState() {
+    let state = LocatorServiceSdk.shared.getState()
+    print("SDK State: \(state)")
+  }
+}
+```
+
+---
+
+### Função `getVersion`
+
+Utilizado para obter a versão atual do SDK em uso.
+
+```swift
+public func getVersion() -> String
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsGetVersion() {
+    let version = LocatorServiceSdk.shared.getVersion()
+    print("SDK Version: \(version)")
+  }
+}
+```
+
+---
+
+### Função `pendingPermissions`
+
+Utilizado para obter a lista de permissões que ainda precisam ser concedidas pelo usuário.
+
+```swift
+public func pendingPermissions() -> [LocatorPermission]
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsCheckPendingPermissions() {
+    let permissions = LocatorServiceSdk.shared.pendingPermissions()
+    
+    if permissions.isEmpty {
+      print("No pending permissions.")
+    } else {
+      print("Pending permissions: \(permissions)")
+    }
+  }
+}
+```
+
+---
+
+### Função `registerIntegration`
+
+Utilizado para registrar ou substituir a integração utilizada pelo SDK.
+
+```swift
+public func registerIntegration(integration: any LocatorIntegration)
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyIntegration: LocatorIntegration {
+  // Implement integration methods here
+}
+
+class MyClass {
+  func  didUserNeedsRegisterIntegration() {
+    let integration = MyIntegration()
+    LocatorServiceSdk.shared.registerIntegration(integration: integration)
+  }
+}
+```
+
+---
+
+### Função `setConfig`
+
+Utilizado para salvar e aplicar uma nova configuração do SDK.
+
+```swift
+public func setConfig(_ config: LocatorConfig)
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSetConfig() {
+    let config = LocatorConfig(
+      // Configure your fields here
+    )
+    
+    LocatorServiceSdk.shared.setConfig(config)
+  }
+}
+```
+
+---
+
+### Função `setFeatures`
+
+Utilizado para definir ou atualizar as funcionalidades disponíveis no SDK.
+
+```swift
+public func setFeatures(_ features: LocatorFeatures)
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSetFeatures() {
+    let features = LocatorFeatures(
+      features: ["fall_detection", "background_location"],
+      revision: "1",
+      createdAt: nil,
+      updatedAt: nil
+    )
+    
+    LocatorServiceSdk.shared.setFeatures(features)
+  }
+}
+```
+
+---
+
+### Função `setGeofences`
+
+Utilizado para configurar as geofences que serão monitoradas pelo SDK.
+
+```swift
+public func setGeofences(_ geofences: LocatorGeofences) async
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSetGeofences() async {
+    let geofences = LocatorGeofences(
+      // Configure your geofences here
+    )
+    
+    await LocatorServiceSdk.shared.setGeofences(geofences)
+  }
+}
+```
+
+---
+
+### Função `setGroups`
+
+Utilizado para salvar os grupos que serão utilizados pelo SDK e atualizar os grupos no MQTT.
+
+```swift
+public func setGroups(_ groups: LocatorGroups)
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSetGroups() {
+    let groups = LocatorGroups(
+      all: ["group_a", "group_b"]
+    )
+    
+    LocatorServiceSdk.shared.setGroups(groups)
+  }
+}
+```
+
+---
+
+### Função `setMutableLicense`
+
+Utilizado para definir ou atualizar a licença utilizada pelo SDK.
+
+```swift
+public func setMutableLicense(license: String)
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSetLicense() {
+    let license = "your-license-key"
+    LocatorServiceSdk.shared.setMutableLicense(license: license)
+  }
+}
+```
+
+---
+
+### Função `setSdkMode`
+
+Utilizado para iniciar o SDK em um modo específico.
+
+```swift
+public func setSdkMode(_ mode: LocatorSdkMode)
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSetSdkMode() {
+    LocatorServiceSdk.shared.setSdkMode(.COLLECTING)
+  }
+}
+```
+
+---
+
+### Função `setState`
+
+Utilizado para alterar o estado interno do SDK.
+
+```swift
+public func setState(_ state: LocatorState)
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsChangeStateToPause() {
+    LocatorServiceSdk.shared.setState(.PAUSED)
+  }
+  
+  func  didUserNeedsChangeStateToCollecting() {
+    LocatorServiceSdk.shared.setState(.COLLECTING)
+  }
+}
+```
+
+---
+
+### Função `sendEvents`
+
+Utilizado para enviar um pacote de eventos personalizados ao backend.
+
+```swift
+public func sendEvents(_ data: LocatorEventPackage) async throws
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSendEvents() async {
+    let events = LocatorEventPackage(
+      // Configure your events here
+    )
+    
+    do {
+      try await LocatorServiceSdk.shared.sendEvents(events)
+    } catch {
+      print("Failed to send events: \(error.localizedDescription)")
+    }
+  }
+}
+```
+
+---
+
+### Função `sendLocations` (sem parâmetros)
+
+Utilizado para enviar as localizações coletadas que estão armazenadas localmente.
+
+```swift
+public func sendLocations() async throws
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSendStoredLocations() async {
+    do {
+      try await LocatorServiceSdk.shared.sendLocations()
+    } catch {
+      print("Failed to send stored locations: \(error.localizedDescription)")
+    }
+  }
+}
+```
+
+---
+
+### Função `sendLocations` (com parâmetro)
+
+Utilizado para enviar um pacote de coletas de localização específico para o backend.
+
+```swift
+public func sendLocations(_ data: LocatorCollectPackage) async throws
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSendLocationsPackage() async {
+    let collectPackage = LocatorCollectPackage(
+      // Configure your collected locations here
+    )
+    
+    do {
+      try await LocatorServiceSdk.shared.sendLocations(collectPackage)
+    } catch {
+      print("Failed to send locations package: \(error.localizedDescription)")
+    }
+  }
+}
+```
+
+---
+
+### Função `start`
+
+Utilizado para iniciar o SDK por completo, realizando todo o fluxo de inicialização necessário.
+
+```swift
+public func start() async throws
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsStartSdk() async {
+    do {
+      try await LocatorServiceSdk.shared.start()
+    } catch {
+      print("Failed to start SDK: \(error.localizedDescription)")
+    }
+  }
+}
+```
+
+---
+
+### Função `stop`
+
+Utilizado para parar o SDK.
+
+```swift
+public func stop() async throws
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsStopSdk() async {
+    do {
+      try await LocatorServiceSdk.shared.stop()
+    } catch {
+      print("Failed to stop SDK: \(error.localizedDescription)")
+    }
+  }
+}
+```
+
+---
+
+### Função `syncAll`
+
+Utilizado para sincronizar todos os dados relevantes do SDK com o backend.
+
+```swift
+public func syncAll() async throws
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSyncAll() async {
+    do {
+      try await LocatorServiceSdk.shared.syncAll()
+    } catch {
+      print("Failed to sync all: \(error.localizedDescription)")
+    }
+  }
+}
+```
+
+---
+
+### Função `syncConfig`
+
+Utilizado para sincronizar apenas as configurações do SDK com o backend.
+
+```swift
+public func syncConfig() async throws
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSyncConfig() async {
+    do {
+      try await LocatorServiceSdk.shared.syncConfig()
+    } catch {
+      print("Failed to sync config: \(error.localizedDescription)")
+    }
+  }
+}
+```
+
+---
+
+### Função `syncFeatures`
+
+Utilizado para sincronizar as funcionalidades disponíveis com o backend.
+
+```swift
+public func syncFeatures() async throws
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSyncFeatures() async {
+    do {
+      try await LocatorServiceSdk.shared.syncFeatures()
+    } catch {
+      print("Failed to sync features: \(error.localizedDescription)")
+    }
+  }
+}
+```
+
+---
+
+### Função `syncGeofences`
+
+Utilizado para sincronizar apenas as geofences com o backend.
+
+```swift
+public func syncGeofences() async throws
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSyncGeofences() async {
+    do {
+      try await LocatorServiceSdk.shared.syncGeofences()
+    } catch {
+      print("Failed to sync geofences: \(error.localizedDescription)")
+    }
+  }
+}
+```
+
+---
+
+### Função `syncGroups`
+
+Utilizado para sincronizar os grupos com o backend e atualizar os grupos utilizados pelo MQTT.
+
+```swift
+public func syncGroups() async throws
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSyncGroups() async {
+    do {
+      try await LocatorServiceSdk.shared.syncGroups()
+    } catch {
+      print("Failed to sync groups: \(error.localizedDescription)")
+    }
+  }
+}
+```
+
+---
+
+### Função `syncScopes`
+
+Utilizado para sincronizar escopos adicionais com o backend.
+
+```swift
+public func syncScopes() async throws
+```
+
+Exemplo de utilização:
+
+```swift
+import AppLocatorSDK
+
+class MyClass {
+  func  didUserNeedsSyncScopes() async {
+    do {
+      try await LocatorServiceSdk.shared.syncScopes()
+    } catch {
+      print("Failed to sync scopes: \(error.localizedDescription)")
+    }
+  }
+}
+```
+

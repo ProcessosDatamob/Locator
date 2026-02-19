@@ -1,554 +1,235 @@
-# iOS Examples
+# Exemplos iOS
 
 [< Back](../README.md)
 
 This document contains practical examples of using the Locator SDK for iOS.
 
-## Complete Initialization and Configuration Example
-
-This example shows the complete flow of initialization, configuration, and starting the Locator SDK.
-
-Welcome to the official documentation on **How to implement the Locator iOS SDK**.
-
-The SDK follows the definition described in [LocatorService](../reference/service.md).
-
----
-## Adding the Package
-
-To add the SDK package, you must first generate an authentication token within `Azure Devops`. Inside `User settings`, go to the `Personal access tokens` section. Then, click on `+ New Token`. It is important that this token has the `Read` permission under the `Code` section.
-
-To add the SDK package, go to `xcode` -> `File` -> `Add Package Dependencies...`. When the Package Manager dialog opens, go to the `Search or Enter Package URL` input and search using the following format:
-
-`https://automator:AZURE_TOKEN@dev.azure.com/datamob/DTB-VIVO-LOCATOR/_git/dtb-vivo-locator-ios`
-
-Preferably, select `Up to Next Major Version` as the `Dependency Rule`.
-
----
-
 ### 1. Basic Initialization
 
-Basic SDK initialization is done in the `AppDelegate`:
+To start using the SDK, you need to initialize it. We recommend that you do this in the `application(_:didFinishLaunchingWithOptions:)` method of the `AppDelegate`. If you are not using the `AppDelegate` file, initialize the SDK in the class that starts your application.
 
 ```swift
-import LocatorSDK
-
 import AppLocatorSDK
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
-    func  application(_  application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-		let locatorSdk = LocatorServiceSdk.shared
-		return  true
-	}
-	// ...
+  func  application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+    Task {
+      do {
+        try await LocatorServiceSdk.shared.start()
+      } catch {
+        print("Failed to start Locator SDK: \(error.localizedDescription)")
+      }
+    }
+    
+    return true
+  }
 }
 ```
 
-### 2. Initialization with Configuration
+### 2. Initialization with configuration
 
-Alternatively, you can initialize the SDK by passing the configuration directly to the `initialize` method:
+You can initialize the SDK with a pre-configured setup.
 
 ```swift
-import LocatorSDK
+import AppLocatorSDK
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        
-        // Create configuration before initialization
-        let config = createLocatorConfig()
-        
-        // Initialize with configuration
-        LocatorServiceSdk.shared.initialize(config: config)
-        
-        return true
+  func  application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+    Task {
+      startSdk()
     }
     
-    private func createLocatorConfig() -> LocatorConfig {
-        return LocatorConfig(
-            license: "YOUR_LICENSE_HERE",
-            sdkVersion: "1.0.0",
-            osPlatform: OS_PLATFORM_IOS,
-            mqtt: LocatorMqttConfig(
-                clientId: "ios-client-\(UUID().uuidString)",
-                broker: "mqtt.example.com",
-                port: "8883",
-                username: "mqtt-user"
-            ),
-            api: LocatorApiConfig(
-                token: "JWT_TEMPORARY_TOKEN",
-                certUrl: "https://api.example.com/cert",
-                scopesUrl: "https://api.example.com/scopes",
-                tokenUrl: "https://api.example.com/token",
-                configUrl: "https://api.example.com/config",
-                groupsUrl: "https://api.example.com/groups",
-                featuresUrl: "https://api.example.com/features",
-                geofencesUrl: "https://api.example.com/geofences"
-            ),
-            process: LocatorProcessConfig(
-                retryPolicy: LocatorRetryPolicy(
-                    maxRetries: 3,
-                    baseDelayMs: 1000,
-                    backoffFactor: 2.0
-                ),
-                offlineRetentionDays: 7,
-                foregroundServiceNotification: nil // iOS does not require foreground service notification
-            ),
-            battery: LocatorBatteryConfig(
-                events: [
-                    LocatorBatteryEvent(
-                        name: "low_battery",
-                        min: 0,
-                        max: 20,
-                        interval: 3600000, // 1 hour in milliseconds
-                        charging: false,
-                        powerMode: [.normal]
-                    )
-                ]
-            ),
-            motion: LocatorMotionConfig(
-                sensitivity: 0.5
-            ),
-            collect: LocatorCollectConfig(
-                collectIntervalMillis: 30000, // 30 seconds
-                sendIntervalMillis: 60000, // 1 minute
-                minDisplacementMeters: 10.0,
-                maxTravelDistanceMeters: 1000.0,
-                highAccuracy: true,
-                maxBatchSize: 50
-            )
+    return true
+  }
+
+  func createSdkConfig() -> LocatorConfig {
+    var license = UUID().uuidString
+    
+    if let vendorId = UIDevice.current.identifierForVendor {
+      license = "\(vendorId.uuidString)-APP-EXAMPLE-IOS"
+    }
+    
+    let initialMqttConfig = LocatorMqttConfig(
+      clientId: license,
+      broker: "vivo-locator-mqtt.datamobpro.com",
+      port: "8883",
+      username: license
+    )
+    
+    let initialApiConfig = LocatorApiConfig(
+      token: "",
+      certUrl: "https://locator-api-stage-13376dba-1ef4-41e2-ab1b-ea98248b0b3d.datamobpro.com/cert",
+      scopesUrl: "https://locator-api-stage-13376dba-1ef4-41e2-ab1b-ea98248b0b3d.datamobpro.com/scopes",
+      tokenUrl: "https://locator-api-stage-13376dba-1ef4-41e2-ab1b-ea98248b0b3d.datamobpro.com/token",
+      configUrl: "https://locator-api-stage-13376dba-1ef4-41e2-ab1b-ea98248b0b3d.datamobpro.com/config",
+      groupsUrl: "https://locator-api-stage-13376dba-1ef4-41e2-ab1b-ea98248b0b3d.datamobpro.com/groups",
+      featuresUrl: "https://locator-api-stage-13376dba-1ef4-41e2-ab1b-ea98248b0b3d.datamobpro.com/features",
+      geofencesUrl: "https://locator-api-stage-13376dba-1ef4-41e2-ab1b-ea98248b0b3d.datamobpro.com/geofences"
+    )
+    
+    let process = LocatorProcessConfig(
+      retryPolicy: LocatorRetryPolicy(
+        maxRetries: 3,
+        baseDelayMs: 1000,
+        backoffFactor: 2.0
+      ),
+      offlineRetentionDays: 7,
+      foregroundServiceNotification: nil
+    )
+    
+    let battery = LocatorBatteryConfig(
+      events: [
+        LocatorBatteryEvent(
+          name: "low_battery",
+          min: 0,
+          max: 20,
+          interval: 3600000,
+          charging: false,
+          powerMode: [.NORMAL]
         )
-    }
-}
-```
+      ]
+    )
+    
+    let motion = LocatorMotionConfig(
+      sensitivity: 0
+    )
+    
+    let collect = LocatorCollectConfig(
+      collectIntervalMillis: 0,
+      sendIntervalMillis: 0,
+      minDisplacementMeters: 0,
+      maxTravelDistanceMeters: 0,
+      highAccuracy: true,
+      maxBatchSize: 0,
+      sosAudioRecordsCount: 0,
+      sosAudioDurationSeconds: 0,
+      sosAudioRetryCount: 0
+    )
+    
+    return LocatorConfig(
+      license: license,
+      sdkVersion: "1.0.0",
+      osPlatform: "ios",
+      api: initialApiConfig,
+      mqtt: initialMqttConfig,
+      process: process,
+      battery: battery,
+      motion: motion,
+      collect: collect,
+      revision: 1,
+      createdAt: Date.miliseconds,
+      updatedAt: Date.miliseconds
+    )
+  }
 
-### 3. Complete Flow: Get Instance, Configure and Start
-
-Complete example showing the entire configuration flow:
-
-```swift
-import LocatorSDK
-import UIKit
-
-class ViewController: UIViewController {
-    var sdk: LocatorServiceSdk?
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        // Configure and start the SDK
-        setupLocatorSDK()
-    }
-    
-    private func setupLocatorSDK() {
-        // 1. Get SDK instance
-        switch LocatorServiceSdk.shared() {
-        case .success(let instance):
-            self.sdk = instance
-            
-            // 2. Register custom integrator (optional)
-            registerCustomIntegration()
-            
-            // 3. Configure the SDK
-            configureSDK()
-            
-            // 4. Check permissions before starting
-            checkPermissionsAndStart()
-            
-        case .failure(let error):
-            if let locatorError = error as? LocatorSDKError, locatorError == .notInitialized {
-                print("SDK not initialized. Initialize in AppDelegate.")
-                // Try to initialize here if necessary
-                LocatorServiceSdk.shared.initialize()
-                setupLocatorSDK() // Try again
-            } else {
-                print("Error getting instance: \(error.localizedDescription)")
-            }
-        }
-    }
-    
-    private func registerCustomIntegration() {
-        guard let sdk = sdk else { return }
-        
-        // Register custom integrator (optional)
-        // If not registered, DefaultLocatorSDKIntegrationApiImpl will be used
-        sdk.registerIntegration(integration: CustomLocatorIntegration())
-    }
-    
-    // Example of custom integrator
-    class CustomLocatorIntegration: LocatorIntegration {
-        func getCert(payload: LocatorRequestApiCert) async throws -> LocatorResponseApiCert {
-            // Custom implementation to get certificate
-            return try await yourApiService.getCert(payload: payload)
-        }
-        
-        func getToken(payload: LocatorRequestApiToken) async throws -> LocatorResponseApiToken {
-            // Custom implementation to get token
-            return try await yourApiService.getToken(payload: payload)
-        }
-        
-        func getScopes(payload: LocatorRequestApiScopes) async throws -> LocatorResponseApiScopes {
-            return try await yourApiService.getScopes(payload: payload)
-        }
-        
-        func getFeatures(payload: LocatorRequestApiFeatures) async throws -> LocatorResponseApiFeatures {
-            return try await yourApiService.getFeatures(payload: payload)
-        }
-        
-        func getConfig(payload: LocatorRequestApiConfig) async throws -> LocatorResponseApiConfig {
-            return try await yourApiService.getConfig(payload: payload)
-        }
-        
-        func getGroups(payload: LocatorRequestApiGroups) async throws -> LocatorResponseApiGroups {
-            return try await yourApiService.getGroups(payload: payload)
-        }
-        
-        func getGeofences(payload: LocatorRequestApiGeofences) async throws -> LocatorResponseApiGeofences {
-            return try await yourApiService.getGeofences(payload: payload)
-        }
-    }
-    
-    private func configureSDK() {
-        guard let sdk = sdk else { return }
-        
-        // Create complete configuration
-        let config = LocatorConfig(
-            license: "LICENSE_12345",
-            sdkVersion: "1.0.0",
-            osPlatform: OS_PLATFORM_IOS,
-            mqtt: LocatorMqttConfig(
-                clientId: "ios-\(Int64(Date().timeIntervalSince1970 * 1000))",
-                broker: "mqtt.yourserver.com",
-                port: "8883",
-                username: "mqtt-username"
-            ),
-            api: LocatorApiConfig(
-                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                certUrl: "https://api.yourserver.com/v1/cert",
-                scopesUrl: "https://api.yourserver.com/v1/scopes",
-                tokenUrl: "https://api.yourserver.com/v1/token",
-                configUrl: "https://api.yourserver.com/v1/config",
-                groupsUrl: "https://api.yourserver.com/v1/groups",
-                featuresUrl: "https://api.yourserver.com/v1/features",
-                geofencesUrl: "https://api.yourserver.com/v1/geofences"
-            ),
-            process: LocatorProcessConfig(
-                retryPolicy: LocatorRetryPolicy(
-                    maxRetries: 5,
-                    baseDelayMs: 2000,
-                    backoffFactor: 1.5
-                ),
-                offlineRetentionDays: 10,
-                foregroundServiceNotification: nil
-            ),
-            battery: LocatorBatteryConfig(
-                events: [
-                    LocatorBatteryEvent(
-                        name: "battery_low",
-                        min: 0,
-                        max: 15,
-                        interval: 1800000, // 30 minutes
-                        charging: false,
-                        powerMode: [.normal, .lowPower]
-                    ),
-                    LocatorBatteryEvent(
-                        name: "battery_charging",
-                        min: 80,
-                        max: 100,
-                        interval: 600000, // 10 minutes
-                        charging: true,
-                        powerMode: [.normal]
-                    )
-                ]
-            ),
-            motion: LocatorMotionConfig(
-                sensitivity: 0.7
-            ),
-            collect: LocatorCollectConfig(
-                collectIntervalMillis: 15000, // 15 seconds
-                sendIntervalMillis: 30000, // 30 seconds
-                minDisplacementMeters: 5.0,
-                maxTravelDistanceMeters: 500.0,
-                highAccuracy: false,
-                maxBatchSize: 100
-            )
-        )
-        
-        // Apply configuration
-        sdk.setConfig(config: config)
-    }
-    
-    private func checkPermissionsAndStart() {
-        guard let sdk = sdk else { return }
-        
-        // Check pending permissions
-        let pendingPermissions = sdk.pendingPermissions()
-        
-        if pendingPermissions.isEmpty {
-            // All permissions granted, can start
-            startSDK()
-        } else {
-            // Request missing permissions
-            requestPermissions(pendingPermissions)
-        }
-    }
-    
-    private func requestPermissions(_ permissions: [String]) {
-        // Implement permission request logic
-        // On iOS, you need to request location permissions using CLLocationManager
-        // After granting permissions, call startSDK()
-        
-        let locationManager = CLLocationManager()
-        locationManager.delegate = self
-        locationManager.requestWhenInUseAuthorization()
-        // or locationManager.requestAlwaysAuthorization() for background
-    }
-    
-    private func startSDK() {
-        guard let sdk = sdk else { return }
-        
-        do {
-            try sdk.start()
-            print("SDK started successfully!")
-        } catch let error as LocatorSDKError {
-            switch error {
-            case .missingPermissions:
-                print("Missing permissions. Request permissions again.")
-                checkPermissionsAndStart()
-            case .noConfigSet:
-                print("Configuration not set. Configure again.")
-                configureSDK()
-            default:
-                print("Error starting SDK: \(error.localizedDescription)")
-            }
-        } catch {
-            print("Unknown error starting SDK: \(error.localizedDescription)")
-        }
-    }
-}
-
-// MARK: - CLLocationManagerDelegate
-extension ViewController: CLLocationManagerDelegate {
-    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        switch status {
-        case .authorizedWhenInUse, .authorizedAlways:
-            // Permissions granted, start SDK
-            startSDK()
-        case .denied, .restricted:
-            print("Location permissions denied.")
-        case .notDetermined:
-            break
-        @unknown default:
-            break
-        }
-    }
-}
-```
-
-### 4. Example with Combine (Modern Architecture)
-
-For a more modern architecture using Combine:
-
-```swift
-import LocatorSDK
-import Combine
-import UIKit
-
-class LocatorManager: ObservableObject {
-    @Published var sdkStatus: String = "Not initialized"
-    @Published var permissionsNeeded: [String] = []
-    
-    private var sdk: LocatorServiceSdk?
-    private var cancellables = Set<AnyCancellable>()
-    
-    func initializeSDK() {
-        switch LocatorSDK.shared() {
-        case .success(let instance):
-            self.sdk = instance
-            setupSDK()
-        case .failure(let error):
-            sdkStatus = "Error: \(error.localizedDescription)"
-        }
-    }
-    
-    private func setupSDK() {
-        guard let sdk = sdk else { return }
-        
-        // Configure integrator
-        sdk.registerIntegration(integration: LocatorSDKIntegrationApiImpl())
-        
-        // Create and apply configuration
-        let config = buildLocatorConfig()
-        sdk.setConfig(config: config)
-        
-        // Check permissions
-        let pendingPermissions = sdk.pendingPermissions()
-        if pendingPermissions.isEmpty {
-            startSDK()
-        } else {
-            permissionsNeeded = pendingPermissions
-            sdkStatus = "Waiting for permissions"
-        }
-    }
-    
-    private func buildLocatorConfig() -> LocatorConfig {
-        return LocatorConfig(
-            license: "YOUR_LICENSE",
-            sdkVersion: "1.0.0",
-            osPlatform: OS_PLATFORM_IOS,
-            mqtt: LocatorMqttConfig(
-                clientId: "client-\(UUID().uuidString)",
-                broker: "mqtt.example.com",
-                port: "8883"
-            ),
-            api: LocatorApiConfig(
-                token: "YOUR_JWT_TOKEN",
-                certUrl: "https://api.example.com/cert",
-                scopesUrl: "https://api.example.com/scopes",
-                tokenUrl: "https://api.example.com/token",
-                configUrl: "https://api.example.com/config",
-                groupsUrl: "https://api.example.com/groups",
-                featuresUrl: "https://api.example.com/features",
-                geofencesUrl: "https://api.example.com/geofences"
-            ),
-            process: LocatorProcessConfig(
-                retryPolicy: LocatorRetryPolicy(
-                    maxRetries: 3,
-                    baseDelayMs: 1000,
-                    backoffFactor: 2.0
-                ),
-                offlineRetentionDays: 7,
-                foregroundServiceNotification: nil
-            ),
-            collect: LocatorCollectConfig(
-                collectIntervalMillis: 30000,
-                sendIntervalMillis: 60000,
-                minDisplacementMeters: 10.0,
-                highAccuracy: true
-            )
-        )
-    }
-    
-    func startSDK() {
-        guard let sdk = sdk else { return }
-        
-        do {
-            try sdk.start()
-            sdkStatus = "SDK started successfully"
-        } catch {
-            sdkStatus = "Error: \(error.localizedDescription)"
-        }
-    }
-}
-
-// Usage in ViewController
-class ViewController: UIViewController {
-    @ObservedObject private var locatorManager = LocatorManager()
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        locatorManager.initializeSDK()
-        
-        // Observe status changes
-        locatorManager.$sdkStatus
-            .sink { [weak self] status in
-                print("SDK Status: \(status)")
-            }
-            .store(in: &cancellables)
-    }
-}
-```
-
-### 5. Example with Async/Await (Swift 5.5+)
-
-For a more modern approach using async/await:
-
-```swift
-import LocatorSDK
-
-class LocatorService {
-    private var sdk: LocatorServiceSdk?
-    
-    func setupAndStart() async throws {
-        // 1. Get instance
-        guard case .success(let instance) = LocatorSDK.shared() else {
-            throw LocatorSDKError.notInitialized
-        }
-        
-        sdk = instance
-        
-        // 2. Register integrator
-        sdk?.registerIntegration(integration: LocatorSDKIntegrationApiImpl())
-        
-        // 3. Configure
-        let config = await buildConfig()
-        sdk?.setConfig(config: config)
-        
-        // 4. Check and request permissions if necessary
-        let pendingPermissions = sdk?.pendingPermissions() ?? []
-        if !pendingPermissions.isEmpty {
-            await requestPermissions(pendingPermissions)
-        }
-        
-        // 5. Start
-        try sdk?.start()
-    }
-    
-    private func buildConfig() async -> LocatorConfig {
-        // Fetch configuration from server if necessary
-        return LocatorConfig(
-            license: "YOUR_LICENSE",
-            sdkVersion: "1.0.0",
-            osPlatform: OS_PLATFORM_IOS,
-            mqtt: LocatorMqttConfig(
-                clientId: UUID().uuidString,
-                broker: "mqtt.example.com",
-                port: "8883"
-            ),
-            api: LocatorApiConfig(
-                token: "YOUR_JWT_TOKEN",
-                certUrl: "https://api.example.com/cert",
-                scopesUrl: "https://api.example.com/scopes",
-                tokenUrl: "https://api.example.com/token",
-                configUrl: "https://api.example.com/config",
-                groupsUrl: "https://api.example.com/groups",
-                featuresUrl: "https://api.example.com/features",
-                geofencesUrl: "https://api.example.com/geofences"
-            ),
-            process: LocatorProcessConfig(
-                retryPolicy: LocatorRetryPolicy(
-                    maxRetries: 3,
-                    baseDelayMs: 1000,
-                    backoffFactor: 2.0
-                ),
-                offlineRetentionDays: 7,
-                foregroundServiceNotification: nil
-            ),
-            collect: LocatorCollectConfig(
-                collectIntervalMillis: 30000,
-                sendIntervalMillis: 60000,
-                minDisplacementMeters: 10.0,
-                highAccuracy: true
-            )
-        )
-    }
-    
-    private func requestPermissions(_ permissions: [String]) async {
-        // Implement permission request
-        // Use continuation to convert callback to async
-    }
-}
-
-// Usage
-Task {
+  func startSdk() async {
     do {
-        try await locatorService.setupAndStart()
-        print("SDK configured and started successfully")
-    } catch {
-        print("Error: \(error)")
+      locatorServiceSdk.setConfig(createSdkConfig())
+      try await locatorServiceSdk.start()
+    } catch let error {
+      guard let sdkError = error as? LocatorServiceSdkError else { return }
+      
+      if sdkError.permissions.contains(.LOCATION) || sdkError.permissions.contains(.BACKGROUND_LOCATION) {
+        openAlert(text: "Falta permissão de localização")
+        return
+      }
+      
+      if sdkError.permissions.contains(.MICROPHONE_ACESS) {
+        openAlert(text: "Falta permissão de áudio")
+        return
+      }
+      
+      if sdkError.permissions.contains(.USER_NOTIFICATIONS) {
+        openAlert(text: "Falta permissão de notificações")
+        return
+      }
     }
+  }
+}
+```
+
+### 3. Initialization with integrator
+
+You can initialize the SDK with a custom integrator. To do this, you need to create a class that implements the `LocatorIntegration` protocol and pass that class to the `registerIntegration(integration: any LocatorIntegration)` method.
+
+```swift
+import AppLocatorSDK
+
+class AppDelegate: UIResponder, UIApplicationDelegate {
+  func  application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+    Task {
+      startSdk()
+    }
+    
+    return true
+  }
+
+  func startSdk() async {
+    do {
+      let integrator = MyClassLocatorIntegration()
+      locatorServiceSdk.registerIntegration(integration: integrator)
+      locatorServiceSdk.setConfig(createSdkConfig())
+      try await locatorServiceSdk.start()
+    } catch let error {
+      guard let sdkError = error as? LocatorServiceSdkError else { return }
+      
+      if sdkError.permissions.contains(.LOCATION) || sdkError.permissions.contains(.BACKGROUND_LOCATION) {
+        openAlert(text: "Falta permissão de localização")
+        return
+      }
+      
+      if sdkError.permissions.contains(.MICROPHONE_ACESS) {
+        openAlert(text: "Falta permissão de áudio")
+        return
+      }
+      
+      if sdkError.permissions.contains(.USER_NOTIFICATIONS) {
+        openAlert(text: "Falta permissão de notificações")
+        return
+      }
+    }
+  }
+
+  class MyClassLocatorIntegration: LocatorIntegration {
+    func getApiToken() async -> Result<LocatorResponseApiToken, any Error> {
+        return try await yourApiService.getApiToken()
+    }
+    
+    func getCert() async -> Result<LocatorResponseApiCert, any Error> {
+        return try await yourApiService.getCert()
+    }
+    
+    func getConfig() async -> Result<LocatorResponseApiConfig, any Error> {
+        return try await yourApiService.getCert()
+    }
+    
+    func getFeatures() async -> Result<LocatorResponseApiFeatures, any Error> {
+        return try await yourApiService.getFeatures()
+    }
+    
+    func getGeofences() async -> Result<LocatorResponseApiGeofences, any Error> {
+        return try await yourApiService.getGeofences()
+    }
+    
+    func getGroups() async -> Result<LocatorResponseApiGroups, any Error> {
+        return try await yourApiService.getGroups()
+    }
+    
+    func getMqttToken() async -> Result<LocatorResponseApiToken, any Error> {
+        return try await yourApiService.getMqttToken()
+    }
+    
+    func getScopes() async -> Result<LocatorResponseApiScopes, any Error> {
+        return try await yourApiService.getScopes()
+    }
+    
+    func getWssToken() async -> Result<LocatorResponseApiToken, any Error> {
+        return try await yourApiService.getWssToken()
+    }
+  }
 }
 ```
 
 ## Models
 
-To see the complete models in Swift, see [Models](../examples/models.md).
+To view the complete Swift templates, see [Templates](../examples/models.md).
