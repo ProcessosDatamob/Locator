@@ -2,13 +2,13 @@
 
 [< Back](../README.md)
 
-Bem-vindo à documentação oficial de **Como implementar a SDK Locator iOS**.
+Welcome to the official documentation of ***How to implement the Locator iOS SDK***.
 
 ---
 
 ## Permissions
 
-O SDK necessita que sejam solicitadas algumas permissões ao usuário para que as funcionalidades possam funcionar. Para isso você precisa adicionar as seguintes chaves abaixo no arquivo `info.plist` do seu aplicativo.
+The SDK requires that some permissions be requested from the user in order for its features to work properly. To do this, you must add the following keys to your application's `info.plist` file.
 
 ```xml
 <key>NSLocationWhenInUseUsageDescription</key>
@@ -28,7 +28,7 @@ O SDK necessita que sejam solicitadas algumas permissões ao usuário para que a
 
 ## Capabilities
 
-O SDK necessita que sejam adicionadas algumas capabilities ao aplicativo. Para isso você precisa adicionar as seguintes chaves abaixo no arquivo `info.plist` do seu aplicativo.
+The SDK requires that certain capabilities be added to the application. To do this, you must add the following keys to your application's `info.plist` file.
 
 ```xml
 <key>UIBackgroundModes</key>
@@ -43,7 +43,7 @@ O SDK necessita que sejam adicionadas algumas capabilities ao aplicativo. Para i
 
 ## Background Tasks
 
-O SDK necessita que sejam adicionados os identificadores das tarefas que serão agendadas para serem executadas em background. Para isso você precisa adicionar as seguintes chaves abaixo no arquivo `info.plist` do seu aplicativo.
+The SDK requires that the identifiers of the tasks scheduled to run in the background be added. To do this, you must add the following keys to your application's `info.plist` file.
 
 ```xml
 <key>BGTaskSchedulerPermittedIdentifiers</key>
@@ -56,8 +56,7 @@ O SDK necessita que sejam adicionados os identificadores das tarefas que serão 
 
 ## Initialization
 
-Para começar a usar o SDK você precisa inicializar ele.  
-Recomendamos que você faça a inicialização no método `application(_:didFinishLaunchingWithOptions:)` do `AppDelegate`. Caso você não faça uso do arquivo `AppDelegate`, inicialize o SDK na classe que inicia o seu aplicativo.
+To start using the SDK, you need to initialize it, we recommend initializing it inside the `application(_:didFinishLaunchingWithOptions:)` method of `AppDelegate`. If you are not using the `AppDelegate` file, initialize the SDK in the class that starts your application.
 
 ```swift
 import AppLocatorSDK
@@ -79,21 +78,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 ---
 
-## Funções Disponíveis
+## Available Functions
 
-O SDK conta com diversas funções disponíveis para configurar e obter dados.  
-Abaixo vamos listar e explicar cada uma delas, com exemplos simples utilizando a classe `MyClass`.
+The SDK provides several functions to configure and retrieve data. Below we list and explain each one, with simple examples using the `MyClass` class.
 
+### Function `destroy`
 
-### Função `destroy`
-
-Utilizado para apagar os registros coletados e que estão persistidos no dispositivo e colocar o SDK em modo default.
+Used to delete collected records that are persisted on the device and reset the SDK to its default mode.
 
 ```swift
 public func destroy() async throws
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -111,15 +108,15 @@ class MyClass {
 
 ---
 
-### Função `execute`
+### Function `execute`
 
-Utilizado para executar um comando específico.
+Used to execute a specific command.
 
 ```swift
 public func execute(_ command: LocatorCommand) async throws -> LocatorCommandResult?
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -140,15 +137,15 @@ class MyClass {
 
 ---
 
-### Função `getConfig`
+### Function `getConfig`
 
-Utilizado para obter as configurações atuais do SDK.
+Used to retrieve the current SDK configuration.
 
 ```swift
 public func getConfig() -> LocatorConfig?
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -163,15 +160,15 @@ class MyClass {
 
 ---
 
-### Função `getFeatures`
+### Function `getFeatures`
 
-Utilizado para obter a lista de funcionalidades disponíveis no SDK.
+Used to retrieve the list of available SDK features.
 
 ```swift
 public func getFeatures() -> LocatorFeatures
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -186,15 +183,15 @@ class MyClass {
 
 ---
 
-### Função `getGroups`
+### Function `getGroups`
 
-Utilizado para obter os grupos configurados no SDK.
+Used to retrieve the groups configured in the SDK.
 
 ```swift
 public func getGroups() -> LocatorGroups
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -209,15 +206,15 @@ class MyClass {
 
 ---
 
-### Função `getJwtToken`
+### Function `getJwtToken`
 
-Utilizado para obter o token JWT utilizado na comunicação via WebSocket (WSS).
+Used to retrieve the JWT token used for communication via WebSocket (WSS).
 
 ```swift
 public func getJwtToken() -> String
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -232,15 +229,15 @@ class MyClass {
 
 ---
 
-### Função `getSdkMode`
+### Function `getSdkMode`
 
-Utilizado para obter o modo atual de operação do SDK.
+Used to retrieve the current SDK operating mode.
 
 ```swift
 public func getSdkMode() -> LocatorSdkMode
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -255,15 +252,15 @@ class MyClass {
 
 ---
 
-### Função `getSession`
+### Function `getSession`
 
-Utilizado para obter informações da sessão atual do SDK.
+Used to retrieve information about the current SDK session.
 
 ```swift
 public func getSession() -> LocatorSession
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -280,15 +277,15 @@ class MyClass {
 
 ---
 
-### Função `getState`
+### Function `getState`
 
-Utilizado para obter o estado atual do SDK.
+Used to retrieve the current SDK state.
 
 ```swift
 public func getState() -> LocatorState
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -303,15 +300,15 @@ class MyClass {
 
 ---
 
-### Função `getVersion`
+### Function `getVersion`
 
-Utilizado para obter a versão atual do SDK em uso.
+Used to retrieve the current SDK version in use.
 
 ```swift
 public func getVersion() -> String
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -326,15 +323,15 @@ class MyClass {
 
 ---
 
-### Função `pendingPermissions`
+### Function `pendingPermissions`
 
-Utilizado para obter a lista de permissões que ainda precisam ser concedidas pelo usuário.
+Used to retrieve the list of permissions that still need to be granted by the user.
 
 ```swift
 public func pendingPermissions() -> [LocatorPermission]
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -354,15 +351,15 @@ class MyClass {
 
 ---
 
-### Função `registerIntegration`
+### Function `registerIntegration`
 
-Utilizado para registrar ou substituir a integração utilizada pelo SDK.
+Used to register or replace the integration used by the SDK.
 
 ```swift
 public func registerIntegration(integration: any LocatorIntegration)
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -381,15 +378,15 @@ class MyClass {
 
 ---
 
-### Função `setConfig`
+### Function `setConfig`
 
-Utilizado para salvar e aplicar uma nova configuração do SDK.
+Used to save and apply a new SDK configuration.
 
 ```swift
 public func setConfig(_ config: LocatorConfig)
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -407,15 +404,15 @@ class MyClass {
 
 ---
 
-### Função `setFeatures`
+### Function `setFeatures`
 
-Utilizado para definir ou atualizar as funcionalidades disponíveis no SDK.
+Used to define or update the available SDK features.
 
 ```swift
 public func setFeatures(_ features: LocatorFeatures)
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -436,15 +433,15 @@ class MyClass {
 
 ---
 
-### Função `setGeofences`
+### Function `setGeofences`
 
-Utilizado para configurar as geofences que serão monitoradas pelo SDK.
+Used to configure the geofences that will be monitored by the SDK.
 
 ```swift
 public func setGeofences(_ geofences: LocatorGeofences) async
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -462,15 +459,15 @@ class MyClass {
 
 ---
 
-### Função `setGroups`
+### Function `setGroups`
 
-Utilizado para salvar os grupos que serão utilizados pelo SDK e atualizar os grupos no MQTT.
+Used to save the groups that will be used by the SDK and update the groups in MQTT.
 
 ```swift
 public func setGroups(_ groups: LocatorGroups)
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -488,15 +485,15 @@ class MyClass {
 
 ---
 
-### Função `setMutableLicense`
+### Function `setMutableLicense`
 
-Utilizado para definir ou atualizar a licença utilizada pelo SDK.
+Used to define or update the license used by the SDK.
 
 ```swift
 public func setMutableLicense(license: String)
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -511,15 +508,15 @@ class MyClass {
 
 ---
 
-### Função `setSdkMode`
+### Function `setSdkMode`
 
-Utilizado para iniciar o SDK em um modo específico.
+Used to start the SDK in a specific mode.
 
 ```swift
 public func setSdkMode(_ mode: LocatorSdkMode)
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -533,15 +530,15 @@ class MyClass {
 
 ---
 
-### Função `setState`
+### Function `setState`
 
-Utilizado para alterar o estado interno do SDK.
+Used to change the internal SDK state.
 
 ```swift
 public func setState(_ state: LocatorState)
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -559,15 +556,15 @@ class MyClass {
 
 ---
 
-### Função `sendEvents`
+### Function `sendEvents`
 
-Utilizado para enviar um pacote de eventos personalizados ao backend.
+Used to send a package of custom events to the backend.
 
 ```swift
 public func sendEvents(_ data: LocatorEventPackage) async throws
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -589,15 +586,15 @@ class MyClass {
 
 ---
 
-### Função `sendLocations` (sem parâmetros)
+### Function `sendLocations` (sem parâmetros)
 
-Utilizado para enviar as localizações coletadas que estão armazenadas localmente.
+Used to send collected locations that are stored locally.
 
 ```swift
 public func sendLocations() async throws
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -615,15 +612,15 @@ class MyClass {
 
 ---
 
-### Função `sendLocations` (com parâmetro)
+### Function `sendLocations` (com parâmetro)
 
-Utilizado para enviar um pacote de coletas de localização específico para o backend.
+Used to send a specific package of collected location data to the backend.
 
 ```swift
 public func sendLocations(_ data: LocatorCollectPackage) async throws
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -645,15 +642,15 @@ class MyClass {
 
 ---
 
-### Função `start`
+### Function `start`
 
-Utilizado para iniciar o SDK por completo, realizando todo o fluxo de inicialização necessário.
+Used to fully start the SDK, performing the entire required initialization flow.
 
 ```swift
 public func start() async throws
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -671,15 +668,15 @@ class MyClass {
 
 ---
 
-### Função `stop`
+### Function `stop`
 
-Utilizado para parar o SDK.
+Used to stop the SDK.
 
 ```swift
 public func stop() async throws
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -697,15 +694,15 @@ class MyClass {
 
 ---
 
-### Função `syncAll`
+### Function `syncAll`
 
-Utilizado para sincronizar todos os dados relevantes do SDK com o backend.
+Used to synchronize all relevant SDK data with the backend.
 
 ```swift
 public func syncAll() async throws
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -723,15 +720,15 @@ class MyClass {
 
 ---
 
-### Função `syncConfig`
+### Function `syncConfig`
 
-Utilizado para sincronizar apenas as configurações do SDK com o backend.
+Used to synchronize only the SDK configuration with the backend.
 
 ```swift
 public func syncConfig() async throws
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -749,15 +746,15 @@ class MyClass {
 
 ---
 
-### Função `syncFeatures`
+### Function `syncFeatures`
 
-Utilizado para sincronizar as funcionalidades disponíveis com o backend.
+Used to synchronize the available features with the backend.
 
 ```swift
 public func syncFeatures() async throws
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -775,15 +772,15 @@ class MyClass {
 
 ---
 
-### Função `syncGeofences`
+### Function `syncGeofences`
 
-Utilizado para sincronizar apenas as geofences com o backend.
+Used to synchronize only the geofences with the backend.
 
 ```swift
 public func syncGeofences() async throws
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -801,15 +798,15 @@ class MyClass {
 
 ---
 
-### Função `syncGroups`
+### Function `syncGroups`
 
-Utilizado para sincronizar os grupos com o backend e atualizar os grupos utilizados pelo MQTT.
+Used to synchronize groups with the backend and update the groups used by MQTT.
 
 ```swift
 public func syncGroups() async throws
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
@@ -827,15 +824,15 @@ class MyClass {
 
 ---
 
-### Função `syncScopes`
+### Function `syncScopes`
 
-Utilizado para sincronizar escopos adicionais com o backend.
+Used to synchronize additional scopes with the backend.
 
 ```swift
 public func syncScopes() async throws
 ```
 
-Exemplo de utilização:
+Example usage:
 
 ```swift
 import AppLocatorSDK
