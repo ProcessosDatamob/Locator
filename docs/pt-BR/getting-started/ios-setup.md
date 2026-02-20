@@ -91,3 +91,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   }
 }
 ```
+
+## Push Notification
+
+Para que os `Push Notifications` executem os comandos recebebidos basta implementar o código abaixo dentro do método `func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void)` no `AppDelegate` do seu aplicativo.
+
+```swift
+func userNotificationCenter(
+  _ center: UNUserNotificationCenter,
+  willPresent notification: UNNotification,
+  withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+) {
+  if let data = notification.request.content.userInfo["data"] as? [String: Any],
+      let payload = data["command"] as? String,
+      let json = payload.data(using: .utf8),
+      let command = try? JSONDecoder().decode(LocatorCommand.self, from: json) {
+    Task {
+      try? await LocatorServiceSdk.shared.execute(command)
+    }
+  }
+  
+  executeCommand()
+  completionHandler([.banner, .badge, .sound])
+}
+```

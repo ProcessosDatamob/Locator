@@ -238,7 +238,7 @@ O SDK conta com diversas funções disponíveis para configurar e obter dados. A
 
 ### Função `destroy`
 
-Utilizado para apagar os registros coletados e que estão persistidos no dispositivo e colocar o SDK em modo default.
+Utilizado para apagar os registros coletados e que estão persistidos no dispositivo e colocar o parar execução do SDK.
 
 ```swift
 public func destroy() async throws

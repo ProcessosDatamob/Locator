@@ -238,7 +238,7 @@ The SDK has several functions available for configuring and retrieving data. Bel
 
 ### Function `destroy`
 
-Used to delete collected records that are persisted on the device and reset the SDK to its default mode.
+Used to delete collected records that are persisted on the device and reset the SDK and stop SDK.
 
 ```swift
 public func destroy() async throws
