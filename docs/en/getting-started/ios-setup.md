@@ -65,6 +65,7 @@ The SDK requires that the identifiers of the tasks scheduled to run in the backg
 <key>BGTaskSchedulerPermittedIdentifiers</key>
 <array>
     <string>br.net.datamob.locator.background.task.location</string>
+    <string>br.net.datamob.locator.background.task.sync</string>
 </array>
 ```
 

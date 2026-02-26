@@ -65,6 +65,7 @@ O SDK necessita que sejam adicionados os identificadores das tarefas que serão 
 <key>BGTaskSchedulerPermittedIdentifiers</key>
 <array>
     <string>br.net.datamob.locator.background.task.location</string>
+    <string>br.net.datamob.locator.background.task.sync</string>
 </array>
 ```
 

@@ -19,7 +19,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       do {
         try await LocatorServiceSdk.shared.start()
       } catch {
-        print("Failed to start Locator SDK: \(error.localizedDescription)")
+        if let sdkError = error as? LocatorServiceSdkConfigurationError {
+          presenter.openAlert(text: sdkError.message)
+          return
+        }
+        
+        if let sdkError = error as? LocatorServiceSdkPermissionError {
+          if sdkError.permissions.contains(.LOCATION) || sdkError.permissions.contains(.BACKGROUND_LOCATION) {
+            presenter.openAlert(text: "Falta permissão de localização")
+            return
+          }
+          
+          if sdkError.permissions.contains(.MICROPHONE_ACESS) {
+            presenter.openAlert(text: "Falta permissão de áudio")
+            return
+          }
+          
+          if sdkError.permissions.contains(.USER_NOTIFICATIONS) {
+            presenter.openAlert(text: "Falta permissão de notificações")
+            return
+          }
+        }
       }
     }
     
@@ -129,21 +149,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       locatorServiceSdk.setConfig(createSdkConfig())
       try await locatorServiceSdk.start()
     } catch let error {
-      guard let sdkError = error as? LocatorServiceSdkError else { return }
-      
-      if sdkError.permissions.contains(.LOCATION) || sdkError.permissions.contains(.BACKGROUND_LOCATION) {
-        openAlert(text: "Falta permissão de localização")
+      if let sdkError = error as? LocatorServiceSdkConfigurationError {
+        presenter.openAlert(text: sdkError.message)
         return
       }
       
-      if sdkError.permissions.contains(.MICROPHONE_ACESS) {
-        openAlert(text: "Falta permissão de áudio")
-        return
-      }
-      
-      if sdkError.permissions.contains(.USER_NOTIFICATIONS) {
-        openAlert(text: "Falta permissão de notificações")
-        return
+      if let sdkError = error as? LocatorServiceSdkPermissionError {
+        if sdkError.permissions.contains(.LOCATION) || sdkError.permissions.contains(.BACKGROUND_LOCATION) {
+          presenter.openAlert(text: "Falta permissão de localização")
+          return
+        }
+        
+        if sdkError.permissions.contains(.MICROPHONE_ACESS) {
+          presenter.openAlert(text: "Falta permissão de áudio")
+          return
+        }
+        
+        if sdkError.permissions.contains(.USER_NOTIFICATIONS) {
+          presenter.openAlert(text: "Falta permissão de notificações")
+          return
+        }
       }
     }
   }
@@ -173,21 +198,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       locatorServiceSdk.setConfig(createSdkConfig())
       try await locatorServiceSdk.start()
     } catch let error {
-      guard let sdkError = error as? LocatorServiceSdkError else { return }
-      
-      if sdkError.permissions.contains(.LOCATION) || sdkError.permissions.contains(.BACKGROUND_LOCATION) {
-        openAlert(text: "Falta permissão de localização")
+      if let sdkError = error as? LocatorServiceSdkConfigurationError {
+        presenter.openAlert(text: sdkError.message)
         return
       }
       
-      if sdkError.permissions.contains(.MICROPHONE_ACESS) {
-        openAlert(text: "Falta permissão de áudio")
-        return
-      }
-      
-      if sdkError.permissions.contains(.USER_NOTIFICATIONS) {
-        openAlert(text: "Falta permissão de notificações")
-        return
+      if let sdkError = error as? LocatorServiceSdkPermissionError {
+        if sdkError.permissions.contains(.LOCATION) || sdkError.permissions.contains(.BACKGROUND_LOCATION) {
+          presenter.openAlert(text: "Falta permissão de localização")
+          return
+        }
+        
+        if sdkError.permissions.contains(.MICROPHONE_ACESS) {
+          presenter.openAlert(text: "Falta permissão de áudio")
+          return
+        }
+        
+        if sdkError.permissions.contains(.USER_NOTIFICATIONS) {
+          presenter.openAlert(text: "Falta permissão de notificações")
+          return
+        }
       }
     }
   }
