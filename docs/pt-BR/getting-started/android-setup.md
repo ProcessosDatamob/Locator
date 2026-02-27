@@ -516,5 +516,33 @@ val intent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
 }
 ```
 
+## Atualizações periódicas de cercas (Geo Fences)
+
+A partir da versão 2.1.0 a SDK possuirá um controle de atualizações periódicas das cercas, o tempo das atualizações é definido dentro do objeto `LocatorProcessConfig` com nome `syncGeofencesIntervalMillis`, caso nenhum valor seja passado, a aplicação usará um valor padrão de 3 horas.
+
+```kotlin
+
+@Serializable
+data class LocatorProcessConfig(
+    val retryPolicy: LocatorRetryPolicy? = null,
+    val offlineRetentionDays: Int? = null,
+    val foregroundServiceNotification: ForegroundServiceNotification? = null,
+    val syncGeofencesIntervalMillis: Long = DEFAULT_GEOFENCES_SYNC_INTERVAL
+) {
+    companion object {
+        const val DEFAULT_GEOFENCES_SYNC_INTERVAL: Long = 3 * 60 * 60 * 1000L // 3h
+        const val RETRY_GEOFENCES_SYNC_INTERVAL: Long = 30 * 60 * 1000L // 30m
+    }
+}
+```
+
+O campo `LocatorProcessConfig` é descrito dentro do `LocatorConfig` como `process`.
+
+Em caso de falha no sync, a SDK tentará novamente em tempo reduzido, 30 minutos, após o sucesso voltará a usar o valor descrito em `syncGeofencesIntervalMillis`.
+
+## Pontos de Interesse
+
+### Versão 2.1.0
+* Adição da permissão POST_NOTIFICATIONS no pacote da SDK, isto é devido ao uso do envio de notificações no fluxo de gravação de áudio após o boot do dispositivo em modo SOS, sendo necessário esta permissão para execução do processo.
 
 [< Voltar](../README.md)
