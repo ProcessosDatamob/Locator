@@ -517,4 +517,34 @@ val intent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
 }
 ```
 
+## Periodic updates of Geofences
+
+Starting with version 2.1.0, the SDK will have a control for periodic geofence updates, the update time is defined within the `LocatorProcessConfig` object named `syncGeofencesIntervalMillis`. If no value is passed, the application will use a default value of 3 hours.
+
+```kotlin
+
+@Serializable
+data class LocatorProcessConfig(
+    val retryPolicy: LocatorRetryPolicy? = null,
+    val offlineRetentionDays: Int? = null,
+    val foregroundServiceNotification: ForegroundServiceNotification? = null,
+    val syncGeofencesIntervalMillis: Long = DEFAULT_GEOFENCES_SYNC_INTERVAL
+) {
+    companion object {
+        const val DEFAULT_GEOFENCES_SYNC_INTERVAL: Long = 3 * 60 * 60 * 1000L // 3h
+        const val RETRY_GEOFENCES_SYNC_INTERVAL: Long = 30 * 60 * 1000L // 30m
+    }
+}
+```
+
+The `LocatorProcessConfig` field is described within `LocatorConfig` as `process`.
+
+In case of synchronization failure, the SDK will retry within a limited time of 30 minutes, after success, it will revert to using the value described in `syncGeofencesIntervalMillis`.
+
+## Points of Interest
+
+### Version 2.1.0
+* The POST_NOTIFICATIONS permission has been added to the SDK package. This is due to the use of sending notifications in the audio recording stream after the device boots in SOS mode, and this permission is required for the process to run.
+
+
 [< Back](../README.md)
