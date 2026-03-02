@@ -546,7 +546,7 @@ In case of synchronization failure, the SDK will retry within a limited time of 
 ## Points of Interest
 
 ### Version 2.1.0
-* The POST_NOTIFICATIONS permission has been added to the SDK package. This is due to the use of sending notifications in the audio recording stream after the device boots in SOS mode, and this permission is required for the process to run.
+* The POST_NOTIFICATIONS permission has been added to the SDK package. This is due to the use of sending notifications in the audio recording stream after the device boots in SOS mode, and this permission is required for the process to run. See permissions [here](../reference/enums.md#10-locatorpermission).
 
 
 [< Back](../README.md)
