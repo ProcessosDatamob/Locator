@@ -6,6 +6,8 @@ Bem-vindo à documentação oficial de **Como implementar a SDK Locator Android*
 
 A SDK segue a definição descrita em [LocatorService](../reference/service.md).
 
+Release Notes do Android descrito em [Release Notes Android](../../release-notes-android.md).
+
 ## Configuração do projeto (Gradle)
 
 Antes de utilizar a SDK, é necessário configurar o projeto Android com os plugins e dependências corretos.
