@@ -4,6 +4,8 @@
 
 Welcome to the official documentation of ***How to implement the Locator iOS SDK***.
 
+iOS Release Notes described in [Release Notes iOS](../../release-notes-ios.md)
+
 ---
 
 ## Add SDK
