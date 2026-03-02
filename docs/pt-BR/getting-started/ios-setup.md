@@ -4,7 +4,7 @@
 
 Bem-vindo à documentação oficial de **Como implementar a SDK Locator iOS**.
 
-iOS Release Notes described in [Release Notes iOS](../../release-notes-ios.md)
+Release Notes iOS descrito em [Release Notes iOS](../../release-notes-ios.md)
 
 ---
 
