@@ -553,59 +553,50 @@ export enum LocatorPermission {
 
 #### 🟩 **Kotlin (Android)**
 ```kotlin
-enum class LocatorPermission(val value: String, val permission: String) {
-    LOCATION_FINE(
-        value = "location_fine",
-        permission = "android.permission.ACCESS_FINE_LOCATION"
-    ),
-    LOCATION_COARSE(
-        value = "location_coarse",
-        permission = "android.permission.ACCESS_COARSE_LOCATION"
-    ),
-    LOCATION_BACKGROUND(
-        value = "location_background",
-        permission = "android.permission.ACCESS_BACKGROUND_LOCATION"
-    ),
-    ACTIVITY_RECOGNITION(
-        value = "activity_recognition",
-        permission = "android.permission.ACTIVITY_RECOGNITION"
-    ),
-    ACTIVITY_RECOGNITION_HIGH_RATE_SENSORS(
-        value = "activity_recognition_high_rate_sensors",
-        permission = "android.permission.HIGH_SAMPLING_RATE_SENSORS"
-    ),
-    BODY_SENSORS(
-        value = "body_sensors",
-        permission = "android.permission.health.READ_HEART_RATE"
-    ),
-    BODY_SENSORS_BACKGROUND(
-        value = "body_sensors_background",
-        permission = "android.permission.health.READ_HEART_RATE"
-    ),
-    BATTERY_OPTIMIZATION(
-        value = "battery_optimization",
-        permission = ""
-    ),
-    FOREGROUND_SERVICE(
-        value = "foreground_service",
-        permission = "android.permission.FOREGROUND_SERVICE"
-    ),
-    FOREGROUND_SERVICE_LOCATION(
-        value = "foreground_service_location",
-        permission = "android.permission.FOREGROUND_SERVICE_LOCATION"
-    ),
-    ACCESS_NETWORK_STATE(
-        value = "access_network_state",
-        permission = "android.permission.ACCESS_NETWORK_STATE"
-    ),
-    NONE(value = "none", permission = "none");
+@Serializable
+enum class LocatorPermission(val value: String) {
+    @SerialName("location_fine")
+    LOCATION_FINE(value = "location_fine"), // android.permission.ACCESS_FINE_LOCATION
+
+    @SerialName("location_coarse")
+    LOCATION_COARSE(value = "location_coarse"), // android.permission.ACCESS_COARSE_LOCATION
+
+    @SerialName("location_background")
+    LOCATION_BACKGROUND(value = "location_background"), // android.permission.ACCESS_BACKGROUND_LOCATION
+
+    @SerialName("foreground_service")
+    FOREGROUND_SERVICE(value = "foreground_service"), // android.permission.FOREGROUND_SERVICE
+
+    @SerialName("foreground_service_location")
+    FOREGROUND_SERVICE_LOCATION(value = "foreground_service_location"), // android.permission.FOREGROUND_SERVICE_LOCATION
+
+    @SerialName("foreground_service_microphone")
+    FOREGROUND_SERVICE_MICROPHONE(value = "foreground_service_microphone"), // android.permission.FOREGROUND_SERVICE_MICROPHONE
+
+    @SerialName("activity_recognition")
+    ACTIVITY_RECOGNITION(value = "activity_recognition"), // android.permission.ACTIVITY_RECOGNITION
+
+    @SerialName("battery_optimization")
+    BATTERY_OPTIMIZATION(value = "battery_optimization"), // android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+
+    @SerialName("access_network_state")
+    ACCESS_NETWORK_STATE(value = "access_network_state"), // android.permission.ACCESS_NETWORK_STATE
+
+    @SerialName("record_audio")
+    RECORD_AUDIO(value = "record_audio"), // android.permission.RECORD_AUDIO
+
+    @SerialName("wake_lock")
+    WAKE_LOCK(value = "wake_lock"), // android.permission.WAKE_LOCK
+
+    @SerialName("post_notifications")
+    POST_NOTIFICATIONS(value = "post_notifications"); // android.permission.POST_NOTIFICATIONS
 
     companion object {
-        fun getTypeFrom(value: String): LocatorPermission =
-            LocatorPermission.entries.firstOrNull { it.value == value } ?: NONE
+        fun getTypeFrom(value: String): LocatorPermission? =
+            LocatorPermission.entries.firstOrNull { it.name.equals(value, ignoreCase = true) }
 
-        fun getStringFrom(value: LocatorPermission): String =
-            LocatorPermission.entries.firstOrNull { it == value }?.value ?: NONE.value
+        fun getStringFrom(value: LocatorPermission): String? =
+            LocatorPermission.entries.firstOrNull { it == value }?.value
     }
 }
 ```
