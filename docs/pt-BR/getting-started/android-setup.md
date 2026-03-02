@@ -545,6 +545,6 @@ Em caso de falha no sync, a SDK tentará novamente em tempo reduzido, 30 minutos
 ## Pontos de Interesse
 
 ### Versão 2.1.0
-* Adição da permissão POST_NOTIFICATIONS no pacote da SDK, isto é devido ao uso do envio de notificações no fluxo de gravação de áudio após o boot do dispositivo em modo SOS, sendo necessário esta permissão para execução do processo.
+* Adição da permissão POST_NOTIFICATIONS no pacote da SDK, isto é devido ao uso do envio de notificações no fluxo de gravação de áudio após o boot do dispositivo em modo SOS, sendo necessário esta permissão para execução do processo. Veja as permissões [aqui](../reference/enums.md#10-locatorpermission).
 
 [< Voltar](../README.md)
