@@ -29,6 +29,9 @@ Preferencialmente, selecionar como `Dependency Rule`, `Up to Next Major Version`
 O SDK necessita que sejam solicitadas algumas permissões ao usuário para que as funcionalidades possam funcionar. Para isso você precisa adicionar as seguintes chaves abaixo no arquivo `info.plist` do seu aplicativo.
 
 ```xml
+<key>NSCriticalMessagingUsageDescription</key>
+<string>Este app precisa da sua permissão para receber alertas críticos.</string>
+
 <key>NSLocationWhenInUseUsageDescription</key>
 <string>Este aplicativo precisa de acesso à localização para funcionar corretamente.</string>
 
@@ -54,6 +57,7 @@ O SDK necessita que sejam adicionadas algumas capabilities ao aplicativo. Para i
     <string>fetch</string>
     <string>processing</string>
     <string>location</string>
+    <string>remote-notification</string>
 </array>
 ```
 

@@ -603,12 +603,12 @@ enum class LocatorPermission(val value: String) {
 
 #### 🟧 **Swift (iOS)**
 ```swift
-enum LocationPermission: String{
-    case nSLocationWhenInUseUsageDescription = "location_in_use"
-    case nSLocationAlwaysAndWhenInUseUsageDescription = "location_background"
-    case nSMotionUsageDescription = "motion_usage"
-    case nSFallDetectionUsageDescription = "fall_detection" 
-    case none = "none" 
+public enum LocatorPermission: String {
+  case BACKGROUND_LOCATION = "NSLocationAlwaysAndWhenInUseUsageDescription"
+  case LOCATION = "NSLocationWhenInUseUsageDescription"
+  case MICROPHONE_ACESS = " NSMicrophoneUsageDescription"
+  case USER_NOTIFICATIONS = "NSUserNotificationsUsageDescription"
+  case CRITICAL_ALERT = "NSCriticalMessagingUsageDescription"
 }
 ```
 

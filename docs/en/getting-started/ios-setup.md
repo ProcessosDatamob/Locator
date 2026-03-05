@@ -29,17 +29,20 @@ Preferably, select `Up to Next Major Version` as the `Dependency Rule`.
 The SDK requires that some permissions be requested from the user in order for its features to work properly. To do this, you must add the following keys to your application's `info.plist` file.
 
 ```xml
+<key>NSCriticalMessagingUsageDescription</key>
+<string>This app needs your permission to receive critical alerts.</string>
+
 <key>NSLocationWhenInUseUsageDescription</key>
-<string>Este aplicativo precisa de acesso à localização para funcionar corretamente.</string>
+<string>This app needs access to your location to function correctly.</string>
 
 <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-<string>Este aplicativo precisa de acesso à localização em background para funcionar corretamente.</string>
+<string>This app needs background location access to function correctly.</string>
 
 <key>NSMicrophoneUsageDescription</key>
-<string>Este aplicativo precisa de acesso ao microfone.</string>
+<string>This app needs access to the microphone.</string>
 
 <key>NSMotionUsageDescription</key>
-<string>Este aplicativo precisa acessar os dados do acelerômetro para detectar quedas.</string>
+<string>This app needs access to accelerometer data to detect falls.</string>
 ```
 
 ---
@@ -54,6 +57,7 @@ The SDK requires that certain capabilities be added to the application. To do th
     <string>fetch</string>
     <string>processing</string>
     <string>location</string>
+    <string>remote-notification</string>
 </array>
 ```
 
