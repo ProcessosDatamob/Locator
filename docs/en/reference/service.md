@@ -417,11 +417,11 @@ Possíveis valores (sob `LocatorPermission`):
 
 #### 🟧 **Swift (iOS)**
 ```swift
-NSLocationWhenInUseUsageDescription = "location_in_use"
-NSLocationAlwaysAndWhenInUseUsageDescription = "location_background"
-NSMotionUsageDescription = "motion_usage"
-NSFallDetectionUsageDescription = "fall_detection"
-
+CRITICAL_ALERT = "critical_alert"
+LOCATION = "location"
+LOCATION_BACKGROUND = "location_background"
+MICROPHONE_ACCESS = " microphone_access"
+POST_NOTIFICATIONS = "post_notifications"
 ```
 
 **Uso sugerido:**
