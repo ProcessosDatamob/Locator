@@ -420,7 +420,7 @@ Possíveis valores (sob `LocatorPermission`):
 CRITICAL_ALERT = "critical_alert"
 LOCATION = "location"
 LOCATION_BACKGROUND = "location_background"
-MICROPHONE_ACCESS = " microphone_access"
+MICROPHONE_ACCESS = "microphone_access"
 POST_NOTIFICATIONS = "post_notifications"
 ```
 

@@ -607,7 +607,7 @@ public enum LocatorPermission: String, Codable, CaseIterable {
   case CRITICAL_ALERT = "critical_alert"
   case LOCATION = "location"
   case LOCATION_BACKGROUND = "location_background"
-  case MICROPHONE_ACCESS = " microphone_access"
+  case MICROPHONE_ACCESS = "microphone_access"
   case POST_NOTIFICATIONS = "post_notifications"
 }
 ```
