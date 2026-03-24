@@ -16,6 +16,12 @@
 * Adjustments to external library versions.
 * SOS notification after device boot.
 
+## 1.1.4
+ - Movendo regras de ProGuard/obfuscação para consumer-rules.pro
+
+## 1.1.3
+ - Removendo permissões não utilizadas na versão 1 da SDK
+
 ## 1.1.2
 * Change the osPlatform parameter from Android to android.
 
