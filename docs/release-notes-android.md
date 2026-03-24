@@ -17,10 +17,10 @@
 * SOS notification after device boot.
 
 ## 1.1.4
- - Movendo regras de ProGuard/obfuscação para consumer-rules.pro
+ - Moving ProGuard/obfuscation rules to consumer-rules.pro.
 
 ## 1.1.3
- - Removendo permissões não utilizadas na versão 1 da SDK
+ - Removing unused permissions in SDK version 1.
 
 ## 1.1.2
 * Change the osPlatform parameter from Android to android.
