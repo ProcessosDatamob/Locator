@@ -145,13 +145,14 @@ export interface LocatorApiConfig {
 ```kotlin
 data class LocatorApiConfig(
     val token: String? = null,
-    val certUrl: String? = null,
-    val scopesUrl: String? = null,
-    val tokenUrl: String? = null,
-    val configUrl: String? = null,
-    val groupsUrl: String? = null,
-    val featuresUrl: String? = null,
-    val geofencesUrl: String? = null
+    val certUrl: String,
+    val scopesUrl: String,
+    val tokenUrl: String,
+    val configUrl: String,
+    val groupsUrl: String,
+    val featuresUrl: String,
+    val geofencesUrl: String,
+    val audioUrl: String
 )
 ```
 
@@ -181,6 +182,7 @@ struct LocatorApiConfig {
 | `groupsUrl`    | Endpoint de grupos administrados/visíveis.           |
 | `featuresUrl`  | Endpoint que retorna as features habilitadas.        |
 | `geofencesUrl` | Endpoint para sincronizar geofences.                 |
+| `audioUrl`     | Endpoint para envio dos áudios gravados em SOS.      |
 
 ---
 
@@ -328,7 +330,8 @@ export interface LocatorProcessConfig {
 data class LocatorProcessConfig(
     val retryPolicy: LocatorRetryPolicy? = null,
     val offlineRetentionDays: Int? = null,
-    val foregroundServiceNotification: ForegroundServiceNotification? = null
+    val foregroundServiceNotification: ForegroundServiceNotification? = null,
+    val syncGeofencesIntervalMillis: Long = DEFAULT_GEOFENCES_SYNC_INTERVAL
 )
 
 data class ForegroundServiceNotification(
@@ -374,8 +377,9 @@ export interface LocatorCollectConfig {
 #### 🟩 **Kotlin (Android)**
 ```kotlin
 data class LocatorCollectConfig(
-    val collectIntervalMillis: Long,
-    val sendIntervalMillis: Long,
+    val collectIntervalMillis: Long = DEFAULT_COLLECT_INTERVAL,
+    val collectObservedModeIntervalMillis: Long = DEFAULT_REAL_TIME_COLLECT_INTERVAL,
+    val sendIntervalMillis: Long = DEFAULT_SEND_INTERVAL,
     val minDisplacementMeters: Float? = null,
     val maxTravelDistanceMeters: Float? = null,
     val highAccuracy: Boolean? = null,
@@ -866,8 +870,8 @@ data class LocatorEvent(
     val priority: LocatorPriority? = null,
     val source: LocatorEventSource? = null,
     val level: LocatorEventLevel? = null,
-    val payload: Map<String, Any>? = null,
-    val sequence: Long? = null,
+    val payload: JsonObject? = null,
+    val sequence: Long? = null, // ordenação/idempotência
     val timestamp: Long
 )
 ```
@@ -946,7 +950,7 @@ data class LocatorCommand(
     val requiresInternet: Boolean? = null,
     val requiresWakeUp: Boolean? = null,
     val priority: LocatorPriority = LocatorPriority.NORMAL,
-    val payload: Map<String, Any>? = null,
+    val payload: JsonObject? = null,
     val expireAt: Long? = null, // epoch ms
     val timestamp: Long? = null // epoch ms
 )
@@ -1006,7 +1010,7 @@ data class LocatorCommandResult(
     val status: LocatorCommandStatus,
     val errorCode: LocatorErrorCode? = null,
     val message: String? = null,
-    val details: Map<String, Any> = emptyMap(),
+    val details: JsonObject? = null,
     val attempts: Int? = null,
     val startAt: Long? = null, // epoch ms
     val endAt: Long? = null, // epoch ms
@@ -1094,12 +1098,11 @@ export interface LocatorResponseApi<T> {
 
 #### 🟩 **Kotlin (Android)**
 ```kotlin
-data class LocatorResponseApi<T>(
-    val id: String,
-    val requestId: String,
-    val timestamp: Long,
-    val data: T
-)
+sealed class LocatorResponseApi {
+    abstract val id: String
+    abstract val requestId: String
+    abstract val timestamp: Long
+}
 ```
 
 #### 🟧 **Swift (iOS)**
@@ -1150,25 +1153,85 @@ export interface LocatorRequestApiGeofenses extends LocatorRequestApi {}
 
 #### 🟩 **Kotlin (Android)**
 ```kotlin
-typealias LocatorResponseApiCert = LocatorResponseApi<LocatorCert>
-typealias LocatorResponseApiToken = LocatorResponseApi<LocatorToken>
-typealias LocatorResponseApiGroups = LocatorResponseApi<LocatorGroups>
-typealias LocatorResponseApiScopes = LocatorResponseApi<List<String>>
-typealias LocatorResponseApiFeatures = LocatorResponseApi<LocatorFeatures>
-typealias LocatorResponseApiConfig = LocatorResponseApi<LocatorConfig>
-typealias LocatorResponseApiGeofenses = LocatorResponseApi<LocatorGeofences>
+// RESPONSES
+data class LocatorResponseApiCert(
+    override val id: String,
+    override val requestId: String,
+    override val timestamp: Long,
+    val data: LocatorCert
+) : LocatorResponseApi()
+
+data class LocatorResponseApiToken(
+    override val id: String,
+    override val requestId: String,
+    override val timestamp: Long,
+    val data: LocatorToken
+) : LocatorResponseApi()
+
+data class LocatorResponseApiGroups(
+    override val id: String,
+    override val requestId: String,
+    override val timestamp: Long,
+    val data: LocatorGroups
+) : LocatorResponseApi()
+
+data class LocatorResponseApiScopes(
+    override val id: String,
+    override val requestId: String,
+    override val timestamp: Long,
+    val data: List<String>
+) : LocatorResponseApi()
+
+data class LocatorResponseApiFeatures(
+    override val id: String,
+    override val requestId: String,
+    override val timestamp: Long,
+    val data: LocatorFeatures
+) : LocatorResponseApi()
+
+data class LocatorResponseApiConfig(
+    override val id: String,
+    override val requestId: String,
+    override val timestamp: Long,
+    val data: LocatorConfig
+) : LocatorResponseApi()
+
+data class LocatorResponseApiGeofenses(
+    override val id: String,
+    override val requestId: String,
+    override val timestamp: Long,
+    val data: LocatorGeofences
+) : LocatorResponseApi()
+
+data class LocatorResponseApiAudio(
+    override val id: String,
+    override val requestId: String = "",
+    override val timestamp: Long,
+    val data: Data
+) : LocatorResponseApi() {
+    @Serializable
+    data class Data(
+        val audioId: String,
+        val processedAt: Long,
+        val status: String,
+        val message: String
+    )
+}
+
+// REQUEST
 
 data class LocatorRequestApiCert(
     override val id: String,
     override val license: String,
     override val sessionId: String?,
-    override val sdkVersion: String?,
-    override val osPlatform: String?,
+    override val sdkVersion: String = BuildConfig.LIBRARY_VERSION,
+    override val osPlatform: String = OS_PLATFORM_ANDROID,
     override val timestamp: Long,
     override val data: Data
 ) : LocatorRequestApi<LocatorRequestApiCert.Data> {
+    @Serializable
     data class Data(
-        val nonce: String
+        val nonce: String // usado como parte do algoritimo para compor a senha do certificado
     )
 }
 
@@ -1176,14 +1239,15 @@ data class LocatorRequestApiToken(
     override val id: String,
     override val license: String,
     override val sessionId: String?,
-    override val sdkVersion: String?,
-    override val osPlatform: String?,
+    override val sdkVersion: String = BuildConfig.LIBRARY_VERSION,
+    override val osPlatform: String = OS_PLATFORM_ANDROID,
     override val timestamp: Long,
     override val data: Data
 ) : LocatorRequestApi<LocatorRequestApiToken.Data> {
+    @Serializable
     data class Data(
         val type: LocatorTokenType,
-        val scopes: List<String>? = null
+        val scopes: List<String>? = null // scopes embutidos dentro do token, usado para RBAC a nivel des backend
     )
 }
 
@@ -1191,8 +1255,8 @@ data class LocatorRequestApiGroups(
     override val id: String,
     override val license: String,
     override val sessionId: String?,
-    override val sdkVersion: String?,
-    override val osPlatform: String?,
+    override val sdkVersion: String = BuildConfig.LIBRARY_VERSION,
+    override val osPlatform: String = OS_PLATFORM_ANDROID,
     override val timestamp: Long,
     override val data: Unit?
 ) : LocatorRequestApi<Unit?>
@@ -1201,8 +1265,8 @@ data class LocatorRequestApiScopes(
     override val id: String,
     override val license: String,
     override val sessionId: String?,
-    override val sdkVersion: String?,
-    override val osPlatform: String?,
+    override val sdkVersion: String = BuildConfig.LIBRARY_VERSION,
+    override val osPlatform: String = OS_PLATFORM_ANDROID,
     override val timestamp: Long,
     override val data: Unit?
 ) : LocatorRequestApi<Unit?>
@@ -1211,8 +1275,8 @@ data class LocatorRequestApiFeatures(
     override val id: String,
     override val license: String,
     override val sessionId: String?,
-    override val sdkVersion: String?,
-    override val osPlatform: String?,
+    override val sdkVersion: String = BuildConfig.LIBRARY_VERSION,
+    override val osPlatform: String = OS_PLATFORM_ANDROID,
     override val timestamp: Long,
     override val data: Unit?
 ) : LocatorRequestApi<Unit?>
@@ -1221,8 +1285,8 @@ data class LocatorRequestApiConfig(
     override val id: String,
     override val license: String,
     override val sessionId: String?,
-    override val sdkVersion: String?,
-    override val osPlatform: String?,
+    override val sdkVersion: String = BuildConfig.LIBRARY_VERSION,
+    override val osPlatform: String = OS_PLATFORM_ANDROID,
     override val timestamp: Long,
     override val data: Unit?
 ) : LocatorRequestApi<Unit?>
@@ -1231,11 +1295,35 @@ data class LocatorRequestApiGeofenses(
     override val id: String,
     override val license: String,
     override val sessionId: String?,
-    override val sdkVersion: String?,
-    override val osPlatform: String?,
+    override val sdkVersion: String = BuildConfig.LIBRARY_VERSION,
+    override val osPlatform: String = OS_PLATFORM_ANDROID,
     override val timestamp: Long,
-    override val data: Unit?
-) : LocatorRequestApi<Unit?>
+    override val data: Data?
+) : LocatorRequestApi<LocatorRequestApiGeofenses.Data?> {
+
+    data class Data(
+        val latitude: Double,
+        val longitude: Double
+    )
+}
+
+data class LocatorRequestApiAudio(
+    override val id: String,
+    override val license: String,
+    override val sessionId: String?,
+    override val sdkVersion: String = BuildConfig.LIBRARY_VERSION,
+    override val osPlatform: String = OS_PLATFORM_ANDROID,
+    override val timestamp: Long,
+    override val data: Data
+) : LocatorRequestApi<LocatorRequestApiAudio.Data> {
+
+    data class Data(
+        val audioId: String,
+        val durationSeconds: Int,
+        val format: String,
+        val metadata: Map<String, String> = mapOf()
+    )
+}
 ```
 
 #### 🟧 **Swift (iOS)**
@@ -1367,19 +1455,20 @@ export interface LocatorAudioRecord {
 
 #### 🟩 **Kotlin (Android)**
 ```kotlin
-@Serializable
 data class LocatorAudioRecord(
     val recordsCount: Int = 1,
     val durationSeconds: Int = 60,
     val retryCount: Int = 1,
     val intervalSeconds: Int = 60,
-    val audioServiceNotification: AudioServiceNotification
+    val audioServiceNotification: AudioServiceNotification,
+    val bootNotification: AudioServiceNotification? = null
 )
 
-@Serializable
 data class AudioServiceNotification(
     val title: String? = null,
-    val message: String? = null
+    val message: String? = null,
+    val deeplinkValue: String? = null,
+    val deeplinkKey: String? = null
 )
 ```
 
