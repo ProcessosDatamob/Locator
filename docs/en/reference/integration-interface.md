@@ -116,6 +116,7 @@ interface LocatorIntegration {
     suspend fun getConfig(payload: LocatorRequestApiConfig): LocatorResponseApiConfig
     suspend fun getGroups(payload: LocatorRequestApiGroups): LocatorResponseApiGroups
     suspend fun getGeofences(payload: LocatorRequestApiGeofenses): LocatorResponseApiGeofenses
+    suspend fun sendAudio(audioBytes: ByteArray, mimeType: String,payload: LocatorRequestApi.LocatorRequestApiAudio): LocatorResponseApiAudio
 }
 ```
 
@@ -317,6 +318,20 @@ getGeofences(payload: LocatorRequestApiGeofenses): Promise<LocatorResponseApiGeo
 - Deve retornar **todas** as geofences
 - SDK ativa somente as dos grupos presentes em `LocatorGroups`
 - Se chegar geofence de grupo desconhecido → SDK força `syncGroups()`
+
+---
+
+# 🟦 **3.4.8 `sendAudio()`**
+
+Realiza o envio do áudio gravado em modo SOS.
+
+```kotlin
+suspend fun sendAudio(audioBytes: ByteArray, mimeType: String, payload: LocatorRequestApi.LocatorRequestApiAudio): LocatorResponseApiAudio
+```
+
+### Regras
+
+- Deve retornar o status do envio.
 
 ---
 
