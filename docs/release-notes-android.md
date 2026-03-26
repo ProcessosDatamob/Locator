@@ -5,6 +5,7 @@
 ## 2.1.0
 * Dynamic fences: added behavior to update geofences periodically, configurable time.
 * POST_NOTIFICATIONS has been moved to the SDK due to the audio recording functionality after boot.
+* BATTERY_OPTIMIZATION and ACTIVITY_RECOGNITION permissions have become optional by business decision.
 
 ## 2.0.0
 * Remove Permissions from SDK: READ_PHONE_STATE, HIGH_SAMPLING_RATE_SENSORS, WRITE_EXTERNAL_STORAGE and READ_EXTERNAL_STORAGE.
