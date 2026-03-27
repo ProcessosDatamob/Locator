@@ -96,7 +96,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         backoffFactor: 2.0
       ),
       offlineRetentionDays: 7,
-      foregroundServiceNotification: nil
+      foregroundServiceNotification: nil,
+      syncGeofencesIntervalMillis: nil
     )
     
     let battery = LocatorBatteryConfig(
@@ -122,10 +123,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       minDisplacementMeters: 0,
       maxTravelDistanceMeters: 0,
       highAccuracy: true,
-      maxBatchSize: 0,
-      sosAudioRecordsCount: 0,
-      sosAudioDurationSeconds: 0,
-      sosAudioRetryCount: 0
+      maxBatchSize: 0
+    )
+    
+    let audioRecord = LocatorAudioRecord(
+      recordsCount: 3,
+      durationSeconds: 10,
+      retryCount: 3,
+      intervalSeconds: 10
     )
     
     return LocatorConfig(
@@ -138,6 +143,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       battery: battery,
       motion: motion,
       collect: collect,
+      audioRecord: audioRecord,
       revision: 1,
       createdAt: Date.miliseconds,
       updatedAt: Date.miliseconds
